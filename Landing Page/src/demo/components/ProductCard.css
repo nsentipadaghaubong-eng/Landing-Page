@@ -1,0 +1,997 @@
+/* ==========================================================================
+   Base Layout Modifications and Row Configurations
+   ========================================================================== */
+:root {
+  --product-card-bg: #0f172a;
+  --product-card-hover-bg: rgba(255, 255, 255, 0.06);
+  --product-card-border: rgba(255, 255, 255, 0.08);
+  --product-card-text: #f8fafc;
+  --product-card-muted: #94a3b8;
+  --product-card-accent: #38bdf8;
+  --product-card-secondary-bg: #111827;
+  --product-card-action-bg: rgba(255, 255, 255, 0.04);
+  --product-card-button-bg: #ffffff;
+  --product-card-button-text: #334155;
+  --product-card-button-border: #cbd5e1;
+  --product-card-button-muted: #64748b;
+  --product-card-input-bg: #111827;
+  --product-card-input-border: #334155;
+  --product-card-input-text: #f8fafc;
+  --product-card-surface: #0f172a;
+  --product-card-alt-surface: #1e293b;
+  --product-card-panel-border: #334155;
+  --product-card-badge-safe-bg: #dcfce7;
+  --product-card-badge-safe-text: #166534;
+  --product-card-badge-soon-bg: #fff7ed;
+  --product-card-badge-soon-text: #b45309;
+  --product-card-badge-expired-bg: #fee2e2;
+  --product-card-badge-expired-text: #991b1b;
+}
+
+.light-mode {
+  --product-card-bg: #ffffff;
+  --product-card-hover-bg: #f8fafc;
+  --product-card-border: #e2e8f0;
+  --product-card-text: #334155;
+  --product-card-muted: #64748b;
+  --product-card-accent: #2563eb;
+  --product-card-secondary-bg: #f8fafc;
+  --product-card-action-bg: #ffffff;
+  --product-card-button-bg: #ffffff;
+  --product-card-button-text: #334155;
+  --product-card-button-border: #cbd5e1;
+  --product-card-button-muted: #64748b;
+  --product-card-input-bg: #ffffff;
+  --product-card-input-border: #cbd5e1;
+  --product-card-input-text: #0f172a;
+  --product-card-surface: #ffffff;
+  --product-card-alt-surface: #f8fafc;
+  --product-card-panel-border: #e2e8f0;
+  --product-card-badge-safe-bg: #dcfce7;
+  --product-card-badge-safe-text: #166534;
+  --product-card-badge-soon-bg: #ffedd5;
+  --product-card-badge-soon-text: #9a3412;
+  --product-card-badge-expired-bg: #fee2e2;
+  --product-card-badge-expired-text: #991b1b;
+}
+
+.product-row-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  background: var(--product-card-bg);
+  border-bottom: 1px solid var(--product-card-border);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 68px; /* Anchor layout vertical heights uniformly across all records */
+  box-sizing: border-box;
+}
+
+.product-row-card:hover {
+  background-color: var(--product-card-hover-bg);
+}
+
+.out-of-stock-row {
+  background-color: rgba(248, 113, 113, 0.08);
+}
+
+.expired-row-modifier {
+  background-color: rgba(254, 226, 226, 0.15);
+  border-left: 4px solid #ef4444;
+}
+
+.product-col {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  font-size: 14px;
+  color: var(--product-card-text);
+  font-weight: 400;
+  min-width: 0; /* Prevents text overflow breaks */
+  align-self: stretch; /* Allows columns to match dynamic row height parameters seamlessly */
+}
+
+.name-col {
+  flex: 2.5;
+}
+
+.product-name {
+  display: flex;
+  align-items: flex-start; /* Keeps the leading SVG graphic pinned accurately to the text header row */
+  gap: 10px;
+  width: 100%;
+}
+
+.product-name svg {
+  margin-top: 3px; /* Balances the icon perfectly with the line-height configuration of text elements */
+  flex-shrink: 0;
+}
+
+.name-wrapper {
+  display: flex;
+  flex-direction: column; /* Shifts layout strictly to column formatting to protect wrapped attributes */
+  min-width: 0;
+  flex: 1;
+}
+
+.name-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--product-card-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; /* Confines truncation parameters entirely to the string text itself */
+  display: block;
+  width: 100%;
+}
+
+.product-row-card.out-of-stock-row .name-text,
+.product-row-card.expired-row-modifier .name-text {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.text-critical {
+  font-weight: 600;
+  color: #ef4444;
+}
+
+.stock-count-text {
+  font-weight: 600;
+}
+
+.product-row-card.out-of-stock-row .stock-count-text {
+  font-weight: 700;
+  color: #ef4444;
+}
+
+/* ==========================================================================
+   PRODUCTS MATRIX TABLE HEADERS (DESKTOP)
+   ========================================================================== */
+.variants-matrix-desktop-headers {
+  display: grid;
+  grid-template-columns: 2.5fr 1fr 1fr 310px; /* Aligns with row grid weight and button layouts */
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 600;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+/* ==========================================================================
+   Status Badging Systems
+   ========================================================================== */
+.expiry-badge-inline {
+  font-size: 11px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px; /* Spacers introduced between text truncation boundaries and row status tags */
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  line-height: 1.2;
+  border: 1px solid transparent;
+  flex-shrink: 0; /* Ensures critical timing indicators never collapse visually on desktop sizing variations */
+}
+
+.expiry-none {
+  color: var(--product-card-muted);
+}
+.expiry-expired {
+  background-color: var(--product-card-badge-expired-bg);
+  color: var(--product-card-badge-expired-text);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+.expiry-soon {
+  background-color: var(--product-card-badge-soon-bg);
+  color: var(--product-card-badge-soon-text);
+  border-color: rgba(249, 115, 22, 0.2);
+}
+.expiry-safe {
+  background-color: var(--product-card-badge-safe-bg);
+  color: var(--product-card-badge-safe-text);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.out-of-stock-badge,
+.low-stock-badge,
+.in-stock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  width: fit-content;
+  white-space: nowrap;
+}
+
+.out-of-stock-badge {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.low-stock-badge {
+  background-color: #ffedd5;
+  color: #9a3412;
+}
+
+.in-stock-badge {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+/* ==========================================================================
+   Row Operational Button Triggers (Uniformly Sized)
+   ========================================================================== */
+.product-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+  height: 36px;
+}
+
+.product-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--product-card-button-border);
+  background: var(--product-card-button-bg);
+  color: var(--product-card-button-text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+  height: 36px;
+  line-height: 1;
+  margin: 0;
+}
+
+/* Compact structure setup for standard delete actions */
+.product-actions .delete-btn {
+  width: 36px;
+  padding: 8px 0;
+  color: #64748b;
+}
+
+.product-actions .view-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #2563eb;
+}
+
+.product-actions .edit-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0d9488;
+}
+
+.product-actions .sell-btn {
+  background: #2563eb;
+  color: #ffffff;
+  border: 1px solid #2563eb;
+}
+
+.product-actions .sell-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.product-actions .sell-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.product-actions .delete-btn:hover {
+  color: #ef4444;
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+/* ==========================================================================
+   View Modal Specs Elements
+   ========================================================================== */
+.section-subtitle-blue {
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.view-variant-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.view-variant-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.view-variant-row small {
+  opacity: 0.6;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.deactivated-notice {
+  font-size: 13px;
+  color: #64748b;
+  font-style: italic;
+  margin-top: 4px;
+}
+
+.notes-display-paragraph {
+  margin: 6px 0 0;
+  line-height: 1.5;
+  font-size: 13px;
+  white-space: pre-wrap;
+  color: #475569;
+}
+
+.btn-flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* ==========================================================================
+   Form Structural Modifiers & Inputs
+   ========================================================================== */
+.modal-scroll-container {
+  width: 95%;
+  max-width: 700px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.form-content-gap {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-section-card {
+  background: var(--product-card-alt-surface);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--product-card-panel-border);
+  box-sizing: border-box;
+}
+
+.form-section-title {
+  font-size: 14px;
+  color: var(--product-card-text);
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+
+.form-grid-2col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.grid-margin-bottom {
+  margin-bottom: 12px;
+}
+
+.top-margin-compact {
+  margin-top: 12px;
+}
+
+.form-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-field-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--product-card-muted);
+}
+
+.input-padding-compact {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--product-card-panel-border);
+  font-size: 14px;
+  transition: border-color 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input-padding-compact:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+/* ==========================================================================
+   Integrated Scanner Field Row Fixes
+   ========================================================================== */
+.scanner-input-container {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  align-items: center;
+}
+
+.scanner-input-container input {
+  flex: 1;
+  min-width: 0; /* Important context flag: ensures input breaks down without squashing container row */
+}
+
+.scanner-trigger-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  height: 38px;
+  width: 42px;
+  box-sizing: border-box;
+}
+
+.scanner-trigger-action-btn:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+/* ==========================================================================
+   Switch Toggle Banner Modules
+   ========================================================================== */
+.toggle-alert-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #eff6ff;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px dashed #bfdbfe;
+  box-sizing: border-box;
+}
+
+.toggle-banner-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e40af;
+  display: block;
+}
+
+.toggle-banner-desc {
+  font-size: 12px;
+  color: #1e3a8a;
+  margin-top: 2px;
+}
+
+.toggle-banner-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.toggle-live-preview {
+  background: #ffffff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #bfdbfe;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.toggle-live-preview strong {
+  color: #2563eb;
+}
+
+.toggle-switch-icon {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+}
+
+.toggle-active { color: #2563eb; }
+.toggle-inactive { color: #94a3b8; }
+
+/* Simple Mode Flat Config Styles */
+.flat-layout-grid {
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Formulation Matrix Components
+   ========================================================================== */
+.variant-matrix-box {
+  background: rgba(37, 99, 235, 0.01);
+  border: 1px dashed #93c5fd;
+  padding: 14px;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.matrix-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.matrix-title-blue {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.matrix-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #2563eb;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.matrix-add-btn:hover {
+  background: #1d4ed8;
+}
+
+.matrix-rows-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.matrix-item-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 14px;
+  border-radius: 6px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.matrix-row-remove-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: #64748b;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  z-index: 2;
+}
+
+.matrix-row-remove-btn:hover {
+  color: #ef4444;
+}
+
+.matrix-inner-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.margin-bottom-compact {
+  margin-bottom: 10px;
+}
+
+.matrix-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.matrix-input-group label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.variant-select-compact {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  font-size: 13px;
+  width: 100%;
+  box-sizing: border-box;
+  height: 34px;
+}
+
+.matrix-calc-display {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 4px;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.calc-display-subtext {
+  font-size: 10px;
+  color: #64748b;
+}
+
+.calc-display-count {
+  font-size: 12px;
+  color: #1e293b;
+}
+
+/* ==========================================================================
+   Custom Metadata Lists
+   ========================================================================== */
+.custom-fields-section {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 14px;
+}
+
+.custom-fields-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.custom-fields-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.custom-fields-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  background: #64748b;
+  color: #ffffff;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.custom-fields-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.custom-fields-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.custom-field-input {
+  padding: 8px 12px;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.custom-field-remove-icon {
+  padding: 8px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-field-remove-icon:hover {
+  color: #ef4444;
+}
+
+/* Trailing Section Properties */
+.textarea-label-bold {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.textarea-resizer {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  font-size: 13px;
+  resize: vertical;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Point of Sale Overrides */
+.sell-modal-sizing {
+  max-width: 440px;
+  max-height: auto;
+  width: 95%;
+}
+
+.sell-select-wrapper {
+  margin-top: 6px;
+}
+
+.text-capitalize {
+  text-transform: capitalize;
+}
+
+.sell-footer-override {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ==========================================================================
+   Responsive Adaptations & Breakpoints
+   ========================================================================== */
+@media (max-width: 900px) {
+  .variants-matrix-desktop-headers {
+    display: none !important; 
+  }
+
+  .product-row-card {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+  
+  .name-col {
+    flex: 1 1 100%;
+    margin-bottom: 4px;
+  }
+  
+  .product-col {
+    flex: 1 1 calc(33.333% - 12px);
+  }
+  
+  .product-actions {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    margin-top: 12px;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 12px;
+    gap: 8px;
+  }
+  
+  .product-actions button {
+    flex: 1;            
+    width: auto;        
+    max-width: 140px;   
+  }
+
+  .product-actions .delete-btn {
+    flex: 0 0 40px;
+    width: 40px;
+  }
+}
+
+@media (max-width: 600px) {
+  .product-col {
+    flex: 1 1 100%;
+  }
+
+  .view-variant-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  
+  .matrix-inner-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ==========================================================================
+   CRITICAL OVERRIDES: ULTRA SMARTPHONES AND COMPACT MOBILE SCREENS (< 360px)
+   ========================================================================== */
+@media (max-width: 360px) {
+  .modal-scroll-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 10px 6px;
+    max-height: 90vh;
+  }
+
+  .sale-modal-container {
+    width: 100%;
+    max-width: 100% !important;
+    margin: 0 auto;
+    border-radius: 8px;
+    max-height: 95vh;
+  }
+
+  .view-modal-container {
+    max-height: 92vh;
+  }
+
+  .sale-modal-overlay {
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sale-modal-header {
+    padding: 12px 10px;
+  }
+
+  .sale-modal-header h2 {
+    font-size: 1.1rem;
+    line-height: 1.3;
+  }
+
+  .sale-modal-header p {
+    font-size: 11px;
+  }
+
+  .sale-modal-content {
+    padding: 10px 8px;
+    gap: 12px;
+  }
+
+  /* Form layouts break to clean isolated block sequences */
+  .form-grid-2col,
+  .flat-layout-grid,
+  .matrix-inner-row,
+  .custom-fields-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+
+  .form-section-card,
+  .variant-matrix-box,
+  .matrix-item-card {
+    padding: 10px 8px;
+  }
+
+  /* Structural adjustment to prevent toggle switches from clipping */
+  .toggle-alert-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .toggle-banner-controls {
+    width: 100%;
+    margin-left: 0;
+    justify-content: space-between;
+  }
+
+  /* Configuration rows nested inside dynamic arrays */
+  .matrix-item-card {
+    padding-top: 32px; /* Adds clear buffer area below the absolute delete button */
+  }
+
+  .matrix-row-remove-btn {
+    top: 6px;
+    right: 6px;
+  }
+
+  /* Fixes nested inline action button grouping for scanner configurations */
+  .scanner-trigger-action-btn {
+    height: 36px;
+    width: 40px;
+  }
+
+  /* Custom attribute properties list formatting */
+  .custom-fields-row {
+    border-bottom: 1px dashed #e2e8f0;
+    padding-bottom: 12px;
+    position: relative;
+  }
+
+  .custom-field-remove-icon {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #fee2e2;
+    border-radius: 50%;
+    color: #ef4444;
+    padding: 4px;
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Tabular View Specification Details Lists overrides */
+  .view-variant-row {
+    grid-template-columns: 1fr !important;
+    gap: 6px;
+    padding: 8px;
+  }
+
+  /* Fixed layout action footers stacked row order configuration */
+  .sale-modal-footer {
+    flex-direction: column-reverse;
+    padding: 12px 10px;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .sale-modal-footer button {
+    width: 100% !important;
+    margin: 0 !important;
+    height: 40px;
+    font-size: 13px;
+    justify-content: center;
+  }
+  
+}
+
+/* ==========================================================================
+   CRITICAL OVERRIDES: ULTRA SMARTPHONES AND COMPACT MOBILE SCREENS (< 360px)
+   ========================================================================== */
+@media (max-width: 360px) {
+  
+  /* THIS SPECIFICALLY ADDS THE GAP AT THE BOTTOM OF THE CARD ON YOUR 350px PHONE */
+  .product-row-card {
+    padding-bottom: 30px !important;}
+  }
