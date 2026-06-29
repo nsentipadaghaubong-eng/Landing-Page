@@ -7,7 +7,7 @@ export default function WaitlistForm() {
     pharmacyName: '',
     email: '',
     address: '',
-    faxNumber: ''
+    faxNumber: '' // Honeypot field to block spam bots
   });
   
   const [status, setStatus] = useState({
@@ -28,29 +28,39 @@ export default function WaitlistForm() {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     
+    // 1. Client-Side Integrity Boundary Check
     if (!formData.pharmacyName.trim() || !formData.email.trim() || !formData.address.trim()) {
       setStatus({ loading: false, success: false, error: 'Please fill out all available fields.', message: '' });
+      return;
+    }
+
+    // 2. Honeypot Validation Strategy (Instant silent block if a bot completes hidden input)
+    if (formData.faxNumber) {
+      setStatus({ loading: false, success: false, error: 'Spam validation block triggered.', message: '' });
       return;
     }
 
     setStatus({ loading: true, success: false, error: null, message: '' });
 
     try {
+      // 3. Dispatch data payload through the api.js service architecture
       const dataResponse = await submitToWaitlist(formData);
       
       setStatus({
         loading: false,
         success: true,
         error: null,
-        message: dataResponse.message
+        message: dataResponse.message || 'Successfully registered on the waitlist!'
       });
 
+      // Clear input buffers upon successful creation record commitment
       setFormData({ pharmacyName: '', email: '', address: '', faxNumber: '' });
     } catch (err) {
+      // 4. Intelligently map custom backend error strings (e.g., Email duplicate conflicts) to UI
       setStatus({
         loading: false,
         success: false,
-        error: err.message,
+        error: err.message || 'The registration server could not be reached. Check your internet connection.',
         message: ''
       });
     }
@@ -70,9 +80,9 @@ export default function WaitlistForm() {
 
       {/* RENDER THE DEMO SUCCESS ACTION PANEL IF EVERYTHING IS OK */}
       {status.success ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.3s ease-out' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ padding: '16px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid #10b981', borderRadius: '8px', color: '#a7f3d0', fontSize: '14px', fontWeight: '500', lineHeight: '1.6' }}>
-            {status.message || 'Successfully registered on the waitlist!'}
+            {status.message}
           </div>
           
           <div style={{ textAlign: 'center', padding: '10px 0' }}>
@@ -81,7 +91,7 @@ export default function WaitlistForm() {
             </p>
             
             <a
-              href="/demo" // Replace this with your actual target demo URL route or handler
+              href="/demo"
               style={{ display: 'block', textDecoration: 'none', textAlign: 'center', padding: '14px', background: '#2563eb', color: '#ffffff', borderRadius: '6px', fontSize: '15px', fontWeight: '600', transition: 'all 0.2s ease', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)' }}
               onMouseOver={(e) => e.currentTarget.style.background = '#1d4ed8'}
               onMouseOut={(e) => e.currentTarget.style.background = '#2563eb'}
@@ -103,7 +113,7 @@ export default function WaitlistForm() {
               name="pharmacyName"
               value={formData.pharmacyName}
               onChange={handleInputChange}
-              placeholder="e.g., MedCare Pharmacy"
+              placeholder="e.g., Your Pharmacy Name"
               disabled={status.loading}
               style={{ padding: '10px 12px', background: '#111827', border: '1px solid #334155', borderRadius: '6px', color: '#f8fafc', fontSize: '14px', outline: 'none' }}
             />

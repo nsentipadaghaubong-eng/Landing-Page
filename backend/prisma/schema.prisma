@@ -16,7 +16,7 @@ model WaitlistEntry {
   id           String   @id @default(uuid())
   pharmacyName String
   email        String   @unique
-  address      String?   @db.Text  // Using Text type to accommodate longer physical addresses
+  address      String   @db.Text  // Using Text type to accommodate longer physical addresses
   createdAt    DateTime @default(now())
 
   @@index([email])

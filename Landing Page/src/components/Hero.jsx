@@ -33,13 +33,14 @@ function Hero() {
 
         {/* High-Intent Problem Statement (The Hook) */}
         <h1>
-          Stop Losing Money to Expired Drugs and Unrecorded Sales.
+          Stop Losing Profits. Run Your Pharmacy with Confidence.
         </h1>
 
         {/* Focused Pharmacy Value Proposition (The Solution) */}
         <p className="subtext">
-          Many pharmacy owners lose serious daily profits because drugs quietly expire on shelves, tablets get sold without records, and old computer software is too slow during rush hour. 
-          <strong> Tipia</strong> gives you a super-fast mobile app that tracks every drug batch, helps you sell older stock first, and works perfectly even when there is no internet network.
+         Discover how Tipia helps you manage your pharmacy from your mobile phone. 
+         Track every drug batch, reduce expired stock losses, 
+         record every sale with confidence, and serve customers faster from one simple app.
         </p>
 
         {/* Clear Call-To-Actions */}

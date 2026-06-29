@@ -7,7 +7,7 @@ import Waitlist from "./components/Waitlist"
 import Footer from "./components/Footer"
 import ProblemSection from "./components/ProblemSection"
 
-import UploadPage from "./pages/UploadPage"
+//import UploadPage from "./pages/UploadPage"
 
 // ✅ ADD THIS
 import DemoApp from "./demo/components/DemoApp"
@@ -34,7 +34,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
 
         {/* UPLOAD PAGE (ADMIN / CMS) */}
-        <Route path="/upload" element={<UploadPage />} />
+        {/*<Route path="/upload" element={<UploadPage />} />*/}
 
         {/* ✅ DEMO PAGE (NEW) */}
         <Route path="/demo" element={<DemoApp />} />

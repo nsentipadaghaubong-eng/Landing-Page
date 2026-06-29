@@ -243,6 +243,21 @@ export default function DemoApp() {
 
       const normalized = normalizeProduct(normalizedPayload)
       setProducts(prevProducts => [...prevProducts, normalized])
+
+      // Log the product creation to activity trail
+      setSalesLog(prev => [{
+        id: Date.now(),
+        productId: normalized.id,
+        name: normalized.name,
+        action: "CREATE",
+        quantity: absoluteCalculatedStock,
+        stock: absoluteCalculatedStock,
+        currentStock: absoluteCalculatedStock,
+        sku: normalized.barcode || "N/A",
+        barcode: normalized.barcode || "Not Available",
+        date: new Date().toLocaleString(),
+      }, ...prev])
+
       setIsFormOpen(false)
     } catch (err) {
       console.error("Failed to add product:", err)
@@ -494,36 +509,47 @@ export default function DemoApp() {
         )}
 
         {activeTab === "sales" && (
-          <div className="panel">
-            <h3>Sales History</h3>
-            {salesLog.length === 0 ? (
-              <p>No sales yet</p>
-            ) : (
-              salesLog.map(sale => (
-                <div key={sale.id} className="sale-item">
-                  <div className="sale-item-split">
-                    <div>
-                      <strong>{sale.name}</strong>
-                      <p className="sale-qty-sub">Quantity: {sale.quantity}</p>
-                      {sale.note && (
-                        <p className="sale-note-sub"><FileText size={12} /> {sale.note}</p>
-                      )}
-                    </div>
-                    <span className="revenue-text">₦{(sale.total ?? Number(sale.price) * sale.quantity).toLocaleString()}</span>
-                  </div>
-                  <p className="sale-date-sub">{sale.date}</p>
-                </div>
-              ))
-            )}
+  <div className="panel">
+    <h3>Sales History</h3>
+    {/* Fix: Filter out product creation activity logs so they don't show up as revenue records */}
+    {salesLog.filter(log => log.action !== "CREATE").length === 0 ? (
+      <p>No sales yet</p>
+    ) : (
+      salesLog
+        .filter(log => log.action !== "CREATE")
+        .map(sale => (
+          <div key={sale.id} className="sale-item">
+            <div className="sale-item-split">
+              <div>
+                <strong>{sale.name}</strong>
+                {/* Fix: fallback to standard units deducted count */}
+                <p className="sale-qty-sub">Quantity: {sale.sellQuantity ?? sale.quantity}</p>
+                {sale.note && (
+                  <p className="sale-note-sub"><FileText size={12} /> {sale.note}</p>
+                )}
+              </div>
+              <span className="revenue-text">
+                ₦{(sale.total ?? Number(sale.price || 0) * (sale.sellQuantity ?? sale.quantity)).toLocaleString()}
+              </span>
+            </div>
+            <p className="sale-date-sub">{sale.date}</p>
           </div>
-        )}
-
+        ))
+    )}
+  </div>
+)}
         {activeTab === "activity" && <ActivityPage salesLog={salesLog} />}
         {activeTab === "reports" && <Reports products={products} salesLog={salesLog} />}
         {activeTab === "settings" && <SettingsPanel darkMode={darkMode} setDarkMode={setDarkMode} />}
       </main>
 {productToSell && (
-  <div className="sale-modal-overlay" onClick={() => setProductToSell(null)}>
+  <div 
+    className="sale-modal-overlay" 
+    style={{
+      backgroundColor: darkMode ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.5)'
+    }}
+    onClick={() => setProductToSell(null)}
+  >
     <div 
       className="sale-modal-container sell-modal-sizing" 
       style={{ 
@@ -534,7 +560,11 @@ export default function DemoApp() {
         maxHeight: '90vh',
         overflowY: 'auto',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        backgroundColor: darkMode ? '#1e293b' : '#ffffff',
+        borderRadius: '8px',
+        boxShadow: darkMode ? '0 20px 25px rgba(0, 0, 0, 0.5)' : '0 20px 25px rgba(0, 0, 0, 0.15)',
+        border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0'
       }} 
       onClick={(e) => e.stopPropagation()}
     >
@@ -554,14 +584,19 @@ export default function DemoApp() {
         const { totalRevenue, totalUnitsToDeduct } = computeCheckoutTotals(metrics, quantityToSell)
 
         return (
-          <div className="sale-modal-form" style={{ marginTop: '0', display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div className="sale-modal-form" style={{ marginTop: '0', display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'flex-start' }}>
             
             {/* Header with fluid layout handling down to 300px */}
-            <div className="sale-modal-header" style={{ paddingBottom: '12px', paddingRight: '20px', borderBottom: '1px solid #e2e8f0' }}>
+            <div className="sale-modal-header" style={{ 
+              paddingBottom: '12px', 
+              paddingRight: '20px', 
+              borderBottom: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+              flexShrink: 0
+            }}>
               <h2 style={{ 
                 fontSize: 'clamp(14px, 4vw, 16px)', 
                 fontWeight: '600', 
-                color: '#0f172a', 
+                color: darkMode ? '#f1f5f9' : '#0f172a', 
                 margin: 0, 
                 textAlign: 'left',
                 lineHeight: '1.3',
@@ -572,7 +607,7 @@ export default function DemoApp() {
               <p style={{ 
                 margin: '6px 0 0', 
                 fontSize: 'clamp(9px, 3vw, 11px)', 
-                color: '#4b5563', 
+                color: darkMode ? '#cbd5e1' : '#4b5563', 
                 textTransform: 'uppercase', 
                 letterSpacing: '0.05em', 
                 fontWeight: '700', 
@@ -582,8 +617,8 @@ export default function DemoApp() {
               </p>
             </div>
 
-            {/* Scrollable body content layer with compact padding handling */}
-            <div style={{ marginTop: '12px', flex: '1 1 auto', overflowY: 'visible' }}>
+            {/* Scrollable content area */}
+            <div style={{ marginTop: '12px', flex: '1 1 auto', overflowY: 'auto', paddingRight: '4px' }}>
               <div className="sale-modal-content" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 
                 {/* STRICT SWITCH DISPATCH CONDITIONAL VIEW */}
@@ -591,21 +626,32 @@ export default function DemoApp() {
                   <>
                     {/* WHOLESALE BULK FOCUS LAYOUT */}
                     <div className="form-field-group" style={{ textAlign: 'left' }}>
-                      <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#64748b', fontWeight: '500' }}>
+                      <label style={{ 
+                        display: 'block', 
+                        marginBottom: '4px', 
+                        fontSize: '11px', 
+                        color: darkMode ? '#cbd5e1' : '#64748b', 
+                        fontWeight: '500' 
+                      }}>
                         Bulk Reference Selling Price:
                       </label>
                       <div style={{ 
                         fontSize: '13px', 
-                        color: '#0f172a', 
+                        color: darkMode ? '#f1f5f9' : '#0f172a', 
                         padding: '8px 10px', 
-                        background: '#f1f5f9', 
+                        background: darkMode ? '#334155' : '#f1f5f9', 
                         borderRadius: '6px', 
-                        border: '1px solid #e2e8f0',
+                        border: darkMode ? '1px solid #475569' : '1px solid #e2e8f0',
                         lineHeight: '1.4',
                         wordBreak: 'break-word'
                       }}>
                         <strong>₦{rate.toLocaleString()}</strong> per Bulk {bulkLabel}
-                        <span style={{ color: '#64748b', marginLeft: '4px', display: 'inline-block', fontSize: '11px' }}>
+                        <span style={{ 
+                          color: darkMode ? '#94a3b8' : '#64748b', 
+                          marginLeft: '4px', 
+                          display: 'inline-block', 
+                          fontSize: '11px' 
+                        }}>
                           (Contains {unitsPerPack} {unitLabel}/{bulkLabel})
                         </span>
                       </div>
@@ -619,13 +665,17 @@ export default function DemoApp() {
                         gap: '2px',
                         marginBottom: '4px' 
                       }}>
-                        <label style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Fit Bulk Quantity to Sell:</label>
+                        <label style={{ 
+                          fontSize: '11px', 
+                          color: darkMode ? '#cbd5e1' : '#64748b', 
+                          fontWeight: '500' 
+                        }}>Fit Bulk Quantity to Sell:</label>
                         <span style={{ 
                           fontSize: '10px', 
-                          color: '#2563eb', 
+                          color: darkMode ? '#60a5fa' : '#2563eb', 
                           fontWeight: '600', 
                           padding: '2px 6px', 
-                          background: '#eff6ff', 
+                          background: darkMode ? '#1e3a8a' : '#eff6ff', 
                           borderRadius: '4px',
                           display: 'inline-block',
                           wordBreak: 'break-word'
@@ -638,9 +688,24 @@ export default function DemoApp() {
                         className="sale-input input-padding-compact"
                         value={quantityToSell}
                         disabled
-                        style={{ fontSize: '13px', padding: '8px 10px', backgroundColor: '#f1f5f9', cursor: 'not-allowed', width: '100%', boxSizing: 'border-box' }}
+                        style={{ 
+                          fontSize: '13px', 
+                          padding: '8px 10px', 
+                          backgroundColor: darkMode ? '#334155' : '#f1f5f9', 
+                          color: darkMode ? '#cbd5e1' : '#0f172a',
+                          cursor: 'not-allowed', 
+                          width: '100%', 
+                          boxSizing: 'border-box',
+                          border: darkMode ? '1px solid #475569' : '1px solid #e2e8f0',
+                          borderRadius: '6px'
+                        }}
                       />
-                      <span style={{ fontSize: '10px', color: '#94a3b8', marginTop: '3px', display: 'block' }}>
+                      <span style={{ 
+                        fontSize: '10px', 
+                        color: darkMode ? '#64748b' : '#94a3b8', 
+                        marginTop: '3px', 
+                        display: 'block' 
+                      }}>
                         * Input optimized for cartons/boxes
                       </span>
                     </div>
@@ -649,10 +714,23 @@ export default function DemoApp() {
                   <>
                     {/* RETAIL UNIT FOCUS LAYOUT */}
                     <div className="form-field-group" style={{ textAlign: 'left' }}>
-                      <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#64748b', fontWeight: '500' }}>
+                      <label style={{ 
+                        display: 'block', 
+                        marginBottom: '4px', 
+                        fontSize: '11px', 
+                        color: darkMode ? '#cbd5e1' : '#64748b', 
+                        fontWeight: '500' 
+                      }}>
                         Unit Base Retail Price:
                       </label>
-                      <div style={{ fontSize: '13px', color: '#0f172a', padding: '8px 10px', background: '#f1f5f9', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ 
+                        fontSize: '13px', 
+                        color: darkMode ? '#f1f5f9' : '#0f172a', 
+                        padding: '8px 10px', 
+                        background: darkMode ? '#334155' : '#f1f5f9', 
+                        borderRadius: '6px', 
+                        border: darkMode ? '1px solid #475569' : '1px solid #e2e8f0' 
+                      }}>
                         <strong>₦{rate.toLocaleString()}</strong> per {unitLabel}
                       </div>
                     </div>
@@ -665,13 +743,17 @@ export default function DemoApp() {
                         gap: '2px',
                         marginBottom: '4px' 
                       }}>
-                        <label style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Fit Unit Quantity to Sell:</label>
+                        <label style={{ 
+                          fontSize: '11px', 
+                          color: darkMode ? '#cbd5e1' : '#64748b', 
+                          fontWeight: '500' 
+                        }}>Fit Unit Quantity to Sell:</label>
                         <span style={{ 
                           fontSize: '10px', 
-                          color: '#059669', 
+                          color: darkMode ? '#4ade80' : '#059669', 
                           fontWeight: '600', 
                           padding: '2px 6px', 
-                          background: '#ecfdf5', 
+                          background: darkMode ? '#1a3a1a' : '#ecfdf5', 
                           borderRadius: '4px',
                           display: 'inline-block'
                         }}>
@@ -683,9 +765,24 @@ export default function DemoApp() {
                         className="sale-input input-padding-compact"
                         value={quantityToSell}
                         disabled
-                        style={{ fontSize: '13px', padding: '8px 10px', backgroundColor: '#f1f5f9', cursor: 'not-allowed', width: '100%', boxSizing: 'border-box' }}
+                        style={{ 
+                          fontSize: '13px', 
+                          padding: '8px 10px', 
+                          backgroundColor: darkMode ? '#334155' : '#f1f5f9',
+                          color: darkMode ? '#cbd5e1' : '#0f172a',
+                          cursor: 'not-allowed', 
+                          width: '100%', 
+                          boxSizing: 'border-box',
+                          border: darkMode ? '1px solid #475569' : '1px solid #e2e8f0',
+                          borderRadius: '6px'
+                        }}
                       />
-                      <span style={{ fontSize: '10px', color: '#94a3b8', marginTop: '3px', display: 'block' }}>
+                      <span style={{ 
+                        fontSize: '10px', 
+                        color: darkMode ? '#64748b' : '#94a3b8', 
+                        marginTop: '3px', 
+                        display: 'block' 
+                      }}>
                         * Input optimized for pieces/tablets
                       </span>
                     </div>
@@ -694,13 +791,30 @@ export default function DemoApp() {
 
                 {/* Transaction Remarks Field */}
                 <div className="form-field-group" style={{ textAlign: 'left' }}>
-                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Transaction Internal Notes:</label>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '4px', 
+                    fontSize: '11px', 
+                    color: darkMode ? '#cbd5e1' : '#64748b', 
+                    fontWeight: '500' 
+                  }}>Transaction Internal Notes:</label>
                   <textarea
                     className="sale-input textarea-resizer"
                     rows={2}
                     value={transactionNotes || "No additional configuration tracking notes added..."}
                     disabled
-                    style={{ minHeight: '44px', fontSize: '12px', padding: '6px 10px', backgroundColor: '#f1f5f9', cursor: 'not-allowed', width: '100%', boxSizing: 'border-box' }}
+                    style={{ 
+                      minHeight: '44px', 
+                      fontSize: '12px', 
+                      padding: '6px 10px', 
+                      backgroundColor: darkMode ? '#334155' : '#f1f5f9',
+                      color: darkMode ? '#cbd5e1' : '#0f172a',
+                      cursor: 'not-allowed', 
+                      width: '100%', 
+                      boxSizing: 'border-box',
+                      border: darkMode ? '1px solid #475569' : '1px solid #e2e8f0',
+                      borderRadius: '6px'
+                    }}
                   />
                 </div>
 
@@ -709,79 +823,157 @@ export default function DemoApp() {
                   <div style={{ 
                     marginTop: '2px', 
                     padding: '8px 10px', 
-                    background: '#fef2f2', 
+                    background: darkMode ? '#7f1d1d' : '#fef2f2', 
                     borderRadius: '6px', 
-                    border: '1px solid #fee2e2', 
+                    border: darkMode ? '1px solid #991b1b' : '1px solid #fee2e2', 
                     display: 'flex', 
                     alignItems: 'center', 
                     flexWrap: 'wrap',
                     gap: '4px', 
                     fontSize: '11px' 
                   }}>
-                    <span style={{ color: '#991b1b', fontWeight: '500' }}>Batch Expiration Status:</span>
-                    <strong style={{ color: '#dc2626' }}>🗓️ {source.expiryDate}</strong>
+                    <span style={{ color: darkMode ? '#fca5a5' : '#991b1b', fontWeight: '500' }}>Batch Expiration Status:</span>
+                    <strong style={{ color: darkMode ? '#fca5a5' : '#dc2626' }}>🗓️ {source.expiryDate}</strong>
                   </div>
                 )}
 
                 {/* ESTIMATED TOTAL MODULE SECTION */}
-                <div style={{ marginTop: '6px', padding: '10px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', textAlign: 'left' }}>
+                <div style={{ 
+                  marginTop: '6px', 
+                  padding: '10px', 
+                  background: darkMode ? '#334155' : '#f8fafc', 
+                  borderRadius: '6px', 
+                  border: darkMode ? '1px solid #475569' : '1px solid #e2e8f0', 
+                  textAlign: 'left' 
+                }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
-                    <span style={{ fontSize: '11px', color: '#475569', fontWeight: '600' }}>ESTIMATED TOTAL:</span>
-                    <strong style={{ fontSize: 'clamp(15px, 5vw, 18px)', color: '#0f172a', fontWeight: '700' }}>
+                    <span style={{ 
+                      fontSize: '11px', 
+                      color: darkMode ? '#cbd5e1' : '#475569', 
+                      fontWeight: '600' 
+                    }}>ESTIMATED TOTAL:</span>
+                    <strong style={{ 
+                      fontSize: 'clamp(15px, 5vw, 18px)', 
+                      color: darkMode ? '#f1f5f9' : '#0f172a', 
+                      fontWeight: '700' 
+                    }}>
                       ₦{totalRevenue.toLocaleString()}
                     </strong>
                   </div>
-                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px', lineHeight: '1.3' }}>
+                  <div style={{ 
+                    fontSize: '10px', 
+                    color: darkMode ? '#94a3b8' : '#64748b', 
+                    marginTop: '4px', 
+                    lineHeight: '1.3' 
+                  }}>
                     (Deducting {totalUnitsToDeduct} total single {unitLabel.toLowerCase()} from tracking)
                   </div>
                 </div>
 
                 {typeof sellError !== 'undefined' && sellError && (
-                  <div className="sale-error-box" style={{ marginTop: '4px', fontSize: '12px' }}>⚠️ {sellError}</div>
+                  <div className="sale-error-box" style={{ 
+                    marginTop: '4px', 
+                    fontSize: '12px',
+                    backgroundColor: darkMode ? '#7f1d1d' : '#fee2e2',
+                    color: darkMode ? '#fca5a5' : '#dc2626',
+                    padding: '8px 10px',
+                    borderRadius: '6px',
+                    border: darkMode ? '1px solid #991b1b' : '1px solid #fecaca'
+                  }}>⚠️ {sellError}</div>
                 )}
               </div>
+            </div>
 
-              {/* Action Buttons styled to match your card options safely handling narrow viewports */}
-              <div 
-                className="sale-modal-footer sell-footer-override" 
+            {/* Action Buttons - Sticky/Fixed at bottom, outside scrollable area */}
+            <div 
+              className="sale-modal-footer sell-footer-override" 
+              style={{ 
+                marginTop: '16px', 
+                paddingTop: 'clamp(8px, 2vw, 12px)', 
+                paddingBottom: 'clamp(8px, 2vw, 12px)',
+                paddingLeft: 'clamp(8px, 2vw, 12px)',
+                paddingRight: 'clamp(8px, 2vw, 12px)',
+                borderTop: darkMode ? '1px solid #334155' : '1px solid #e2e8f0', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                gap: 'clamp(6px, 2vw, 8px)',
+                flexShrink: 0,
+                position: 'sticky',
+                bottom: 0,
+                backgroundColor: darkMode ? '#1e293b' : '#ffffff',
+                zIndex: 10,
+                borderBottomLeftRadius: '8px',
+                borderBottomRightRadius: '8px',
+                boxShadow: darkMode 
+                  ? '0 -4px 12px rgba(0, 0, 0, 0.3)' 
+                  : '0 -4px 12px rgba(0, 0, 0, 0.08)'
+              }}
+            >
+              <button 
+                type="button" 
+                className="sale-cancel-btn" 
                 style={{ 
-                  marginTop: '16px', 
-                  paddingTop: '12px', 
-                  borderTop: '1px solid #e2e8f0', 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  gap: '8px'
+                  margin: 0, 
+                  padding: 'clamp(8px, 2vw, 10px) clamp(10px, 3vw, 14px)', 
+                  fontSize: 'clamp(11px, 2.5vw, 12px)',
+                  flex: '1',
+                  minHeight: '36px',
+                  backgroundColor: darkMode ? '#334155' : '#f1f5f9',
+                  color: darkMode ? '#cbd5e1' : '#475569',
+                  border: darkMode ? '1px solid #475569' : '1px solid #cbd5e1',
+                  borderRadius: '6px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }} 
+                onClick={() => setProductToSell(null)}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = darkMode ? '#475569' : '#e2e8f0'
+                  e.target.style.transform = 'translateY(-1px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = darkMode ? '#334155' : '#f1f5f9'
+                  e.target.style.transform = 'translateY(0)'
                 }}
               >
-                <button 
-                  type="button" 
-                  className="sale-cancel-btn" 
-                  style={{ 
-                    margin: 0, 
-                    padding: '8px 14px', 
-                    fontSize: '12px',
-                    flex: '1'
-                  }} 
-                  onClick={() => setProductToSell(null)}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="button" 
-                  className="sale-confirm-btn" 
-                  style={{ 
-                    margin: 0, 
-                    padding: '8px 14px', 
-                    fontSize: '12px',
-                    flex: '2',
-                    whiteSpace: 'nowrap'
-                  }} 
-                  onClick={handleExecuteSale}
-                >
-                  CONFIRM CHECKOUT
-                </button>
-              </div>
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                className="sale-confirm-btn" 
+                style={{ 
+                  margin: 0, 
+                  padding: 'clamp(8px, 2vw, 10px) clamp(10px, 3vw, 14px)', 
+                  fontSize: 'clamp(11px, 2.5vw, 12px)',
+                  flex: '2',
+                  minHeight: '36px',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  backgroundColor: '#2563eb',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }} 
+                onClick={handleExecuteSale}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#1d4ed8'
+                  e.target.style.transform = 'translateY(-1px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#2563eb'
+                  e.target.style.transform = 'translateY(0)'
+                }}
+              >
+                ✓ CONFIRM SALE
+              </button>
             </div>
 
           </div>

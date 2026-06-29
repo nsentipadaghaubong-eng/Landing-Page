@@ -8,9 +8,9 @@ const { PrismaClient } = require('@prisma/client');
 
 const app = express();
 const prisma = new PrismaClient();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3300;
 
-/* ==========================================================================
+/* ==========================================================================\
    SECURITY MIDDLEWARE CONFIGURATION
    ========================================================================== */
 
@@ -19,11 +19,10 @@ app.use(helmet());
 
 // 2. Strict CORS Configuration (Only your Vite app domain can talk to this API)
 const allowedOrigins = [
-  'http://localhost:5173',           // Keep this just in case
-  'https://localhost:5173',          // <-- ADD THIS LINE FOR YOUR SECURE VITE DEV SERVER
-  'https://tipia.com',              
-  'https://www.tipia.com'
-];
+  'http://localhost:5173',           
+  'https://localhost:5173',          
+  process.env.FRONTEND_URL          // Dynamically reads your production Vercel link
+].filter(Boolean);                  // Filters out any undefined values safely
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -33,73 +32,57 @@ app.use(cors({
     if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
       return callback(null, true);
     } else {
-      return callback(new Error('Blocked by security architecture (CORS restriction).'), false);
+      return callback(new Error('Not allowed by CORS architecture safety controls.'));
     }
   },
-  methods: ['POST'], // Block GET, PUT, DELETE requests on the entire public tree
-  allowedHeaders: ['Content-Type'],
-  maxAge: 86400 // Cache preflight requests for 24 hours to reduce server stress
+  credentials: true
 }));
 
-// 3. Body Parser Payload Constraint (Prevents massive memory exhaustion attacks)
-app.use(express.json({ limit: '10kb' })); 
-
-// 4. Rate Limiting Middleware (Blocks brute force / request flooding)
-const waitlistRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15-minute tracking window
-  max: 5, // A single network IP can only attempt 5 registrations per window
-  message: { error: "Too many requests from this network. Please try again after 15 minutes." },
+// 3. Global Rate Limiting (Prevents Denial of Service and Brute-force submission attacks)
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes window
+  max: 100, // Limit each IP to 100 requests per windowMs
   standardHeaders: true, 
-  legacyHeaders: false, 
+  legacyHeaders: false,
+  message: { error: "Too many requests originating from this endpoint. Please try again after 15 minutes." }
 });
 
-/* ==========================================================================
-   SECURE WAITLIST ROUTE HANDLER
+// Apply rate limiting specifically to the onboarding endpoint
+app.use('/waitlist', apiLimiter);
+
+// 4. Content Type Body Parsing Parsing Layer
+app.use(express.json());
+
+/* ==========================================================================\
+   CORE WAITING ARCHITECTURE API ROUTES
    ========================================================================== */
 
-app.post('/api/waitlist', waitlistRateLimiter, async (req, res) => {
-  // Destructure fields + hidden honeypot field (faxNumber)
-  const { pharmacyName, email, address, faxNumber } = req.body;
-
-  /* --- SECURITY LAYER 1: Anti-Bot Honeypot Validation --- */
-  // Normal human users won't see this field because of CSS display: none.
-  // Automated spam scripts fill out every input field they scan.
-  if (faxNumber) {
-    console.warn(`[Security Alert] Bot detected attempting automated form bypass.`);
-    // Silently pretend it worked to confuse the bot script so it doesn't try a different tactic
-    return res.status(201).json({ 
-      success: true, 
-      message: "Successfully joined the waitlist!" 
-    });
-  }
-
-  /* --- SECURITY LAYER 2: Presence Checklist --- */
-  if (!pharmacyName || !email || !address) {
-    return res.status(400).json({ error: "All onboarding parameters are strictly required." });
-  }
-
-  /* --- SECURITY LAYER 3: Input Length & Format Validation (Anti-XSS & Payload Caps) --- */
-  const cleanName = pharmacyName.trim();
-  const cleanEmail = email.trim().toLowerCase();
-  const cleanAddress = address.trim();
-
-  if (cleanName.length < 2 || cleanName.length > 80) {
-    return res.status(400).json({ error: "Pharmacy Name must be between 2 and 80 plain characters." });
-  }
-
-  if (cleanAddress.length < 5 || cleanAddress.length > 300) {
-    return res.status(400).json({ error: "Premises Address text layout must be between 5 and 300 characters." });
-  }
-
-  // Regex validation protecting syntax parameters
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(cleanEmail) || cleanEmail.length > 100) {
-    return res.status(400).json({ error: "Please provide a valid, authentic email address." });
-  }
-
+app.post('/waitlist', async (req, res) => {
   try {
-    /* --- SECURITY LAYER 4: Safe Parameterized Database Insertion --- */
-    // Prisma strips out malicious SQL injections safely behind the scenes
+    const { pharmacyName, email, address, faxNumber } = req.body;
+
+    /* --- SECURITY LAYER 1: Honeypot Validation --- */
+    if (faxNumber) {
+      // Immediate silent rejection if a bot populates the hidden field
+      return res.status(400).json({ error: "Spam block validation triggered." });
+    }
+
+    /* --- SECURITY LAYER 2: Server-side Empty Boundary Verification --- */
+    if (!pharmacyName || !email || !address) {
+      return res.status(422).json({ error: "Missing required onboarding entities." });
+    }
+
+    /* --- SECURITY LAYER 3: Regular Expression Data Sanitization --- */
+    const cleanName = pharmacyName.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanAddress = address.trim();
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json({ error: "Provided parameter is not a structurally valid email address." });
+    }
+
+    /* --- SECURITY LAYER 4: Database Storage Transaction --- */
     const waitlistRecord = await prisma.waitlistEntry.create({
       data: {
         pharmacyName: cleanName,
@@ -121,24 +104,23 @@ app.post('/api/waitlist', waitlistRateLimiter, async (req, res) => {
 
   } catch (error) {
     /* --- SECURITY LAYER 5: Prisma Safe Error Masking --- */
-    // Code P2002 explicitly isolates unique constraint conflicts (Email duplicate checks)
     if (error.code === 'P2002') {
       return res.status(409).json({ error: "This email address is already registered on our waitlist." });
     }
 
-    // Mask deep database error logs from being exposed to the client interface
     console.error("Internal Server Core Error:", error);
     return res.status(500).json({ error: "An unexpected system transaction error occurred. Please try again later." });
   }
 });
 
-/* ==========================================================================
+/* ==========================================================================\
    GLOBAL CATCH-ALL UNKNOWN ROUTE SECURITY
    ========================================================================== */
 app.use((req, res) => {
   res.status(404).json({ error: "Endpoint architecture reference not found." });
 });
 
+// Initialize server thread
 app.listen(PORT, () => {
-  console.log(`[Tipia Secure Backend Active on Port: ${PORT}`);
+  console.log(`[Tipia Engine v1.0 Production Cluster Running on Port ${PORT}]`);
 });

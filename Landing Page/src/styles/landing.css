@@ -819,3 +819,20 @@ button {
     flex-wrap: wrap;
   }
 }
+.home-link-pill {
+  background-color: transparent;
+  border: 1px solid currentColor;
+  opacity: 0.8;
+}
+
+.home-link-pill:hover {
+  opacity: 1;
+  background-color: rgba(37, 99, 235, 0.08); /* Light subtle blue tinted overlay */
+  transform: translateY(-1px);
+}
+/* Automatically enforces stark white text inside dark mode wrapper components */
+.demo-layout:not(.light-mode) .responsive-theme-heading,
+.demo-layout:not(.light-mode) .report-section-panel h3,
+.demo-layout:not(.light-mode) .status-panel h3 {
+  color: #ffffff !important;
+}

@@ -1,6 +1,8 @@
 // src/services/api.js
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// In Vite development, this reads from your local instance. 
+// When deployed on Vercel, set VITE_API_BASE_URL to your Render web address.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3300';
 
 /**
  * Sends waitlist onboarding parameters to the Express/Prisma backend
@@ -24,7 +26,6 @@ export async function submitToWaitlist(formData) {
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      // Fallback if backend responds with plain text (common for 502/504 gateways or severe rate limit strings)
       data = { error: responseText || 'An unexpected server error occurred.' };
     }
 
@@ -33,9 +34,10 @@ export async function submitToWaitlist(formData) {
       throw new Error(data.error || 'An unexpected error occurred during submission.');
     }
 
-    return data; // Returns { success: true, message: "...", payload: ... }
+    return data; 
+
   } catch (error) {
-    // Escalate the clean message string directly back to the UI state engine
+    console.error("API Gateway Exception:", error);
     throw error;
   }
 }

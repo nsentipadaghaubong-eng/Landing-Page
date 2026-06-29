@@ -1,5 +1,5 @@
 import "./demo.css"
-import { Boxes, Bell, Activity } from "lucide-react"
+import { Boxes, Bell, Activity, Home } from "lucide-react"
 
 function InventoryHeader({ darkMode }) {
 
@@ -27,6 +27,23 @@ function InventoryHeader({ darkMode }) {
 
       {/* RIGHT */}
       <div className="inventory-header-right">
+
+        {/* BACK TO LANDING PAGE BUTTON */}
+        <a 
+          href="/" 
+          className="header-pill home-link-pill"
+          style={{
+            textDecoration: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <Home size={16} />
+          Back to Home
+        </a>
 
         <div className="header-pill">
           <Activity size={16} />

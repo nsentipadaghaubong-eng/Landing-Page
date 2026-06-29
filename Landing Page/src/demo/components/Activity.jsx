@@ -51,7 +51,7 @@ export default function ActivityPage({ salesLog = [] }) {
         return {
           icon: <PlusCircle size={16} />,
           badgeClass: "badge-create",
-          label: "Added Product",
+          label: "Product Registered",
           color: "#10b981"
         }
       case "RESTOCK":
@@ -131,8 +131,8 @@ export default function ActivityPage({ salesLog = [] }) {
           <Filter size={16} className="filter-icon" />
           <select value={actionFilter} onChange={(e) => setActionFilter(e.target.value)}>
             <option value="all">All Operations</option>
-            <option value="SALE">Sales Logs</option>
-            <option value="CREATE">New Stock Registrations</option>
+            <option value="SALE">Sales Only</option>
+            <option value="CREATE">Product Registrations</option>
           </select>
         </div>
       </div>
@@ -198,7 +198,7 @@ export default function ActivityPage({ salesLog = [] }) {
                               <span className="action-quantity-descriptor">
                                 {isSale 
                                   ? `Sold ${log.quantity} units to customer` 
-                                  : `Added stock with initial quantity of ${log.stockAfter} units`
+                                  : `Registered ${log.quantity} units into inventory`
                                 }
                               </span>
                             </div>
