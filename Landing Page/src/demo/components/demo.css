@@ -335,8 +335,269 @@ button {
   min-width: 240px;
   padding: 16px;
   border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+  color: #f8fafc;
+  position: relative;
+  overflow: hidden;
+}
+
+.card h3 {
+  color: #f8fafc;
+  margin: 12px 0 4px;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.card p {
+  color: #94a3b8;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.light-mode .card {
   background: white;
+  border: 1px solid #e2e8f0;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  color: #0f172a;
+}
+
+.light-mode .card h3 {
+  color: #0f172a;
+}
+
+.light-mode .card p {
+  color: #64748b;
+}
+
+.card-expiry-stat {
+  border-color: rgba(245, 158, 11, 0.25);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+}
+
+.card-expiry-stat--alert {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+}
+
+.light-mode .card-expiry-stat {
+  border-color: #ffedd5;
+  background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+}
+
+.light-mode .card-expiry-stat--alert {
+  border-color: #fecaca;
+  background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+}
+
+.expiry-stat-icon {
+  color: #f59e0b !important;
+  background-color: rgba(245, 158, 11, 0.15);
+  padding: 8px;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  box-sizing: content-box;
+}
+
+.card-expiry-stat--alert .expiry-stat-icon {
+  color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.15);
+}
+
+.card-expiry-stat-accent {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background-color: #f59e0b;
+}
+
+.card-expiry-stat--alert .card-expiry-stat-accent {
+  background-color: #ef4444;
+}
+
+.dashboard-expiry-panel {
+  grid-column: 1 / -1;
+}
+
+.dashboard-expired-panel {
+  grid-column: 1 / -1;
+  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.04);
+}
+
+.light-mode .dashboard-expired-panel {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.panel-title h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.light-mode .panel-title h3 {
+  color: #0f172a;
+}
+
+.expiry-panel-icon {
+  color: #f59e0b;
+}
+
+.expired-panel-icon {
+  color: #ef4444;
+}
+
+.dashboard-expiry-count,
+.dashboard-expired-count {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.dashboard-expired-count {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.dashboard-empty-note {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.light-mode .dashboard-empty-note {
+  color: #64748b;
+}
+
+.dashboard-expiry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dashboard-expiry-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dashboard-expiry-item.expired {
+  border-color: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.light-mode .dashboard-expiry-item {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.light-mode .dashboard-expiry-item.expired {
+  background: #fff1f2;
+  border-color: #fecaca;
+}
+
+.dashboard-expiry-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dashboard-expiry-name {
+  font-weight: 600;
+  color: #f8fafc;
+  font-size: 14px;
+}
+
+.light-mode .dashboard-expiry-name {
+  color: #0f172a;
+}
+
+.dashboard-expiry-date {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.dashboard-expiry-days {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.dashboard-expiry-days.critical {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.dashboard-expiry-more {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.dashboard-expiry-action {
+  margin-top: 14px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.dashboard-expiry-action:hover {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+.dashboard-expiry-action.expired {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+}
+
+.dashboard-expiry-action.expired:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+.light-mode .dashboard-expiry-action {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: #b45309;
+}
+
+.light-mode .dashboard-expiry-action:hover {
+  background: #fef3c7;
+}
+
+.light-mode .dashboard-expiry-action.expired {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #b91c1c;
 }
 
 .icon {
@@ -366,8 +627,22 @@ button {
   gap: 12px;
 }
 
+.stat-panel p {
+  color: #94a3b8;
+  margin: 0;
+}
+
+.light-mode .stat-panel p {
+  color: #64748b;
+}
+
 .stat-panel h2 {
   font-size: 2rem;
+  color: #f8fafc;
+}
+
+.light-mode .stat-panel h2 {
+  color: #0f172a;
 }
 
 /* ==========================================================================

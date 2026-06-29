@@ -24,6 +24,8 @@ import ActivityPage from "./Activity"
 import Reports from "./Reports"
 import SettingsPanel from "./SettingsPanel"
 import BarcodeScanner from "./scanner/BarcodeScanner"
+import { resolveCheckoutMetrics, computeCheckoutTotals } from "../utils/checkoutMetrics"
+import { isExpired, isExpiringSoon } from "../utils/expiryMetrics"
 
 export default function DemoApp() {
   // Normalizer: strictly moves or isolates properties based on variant availability
@@ -114,9 +116,6 @@ export default function DemoApp() {
   const [scannerCallback, setScannerCallback] = useState(null)
 
   const [productToSell, setProductToSell] = useState(null)
-  const [sellQuantity, setSellQuantity] = useState(1)
-  const [selectedVariantIdx, setSelectedVariantIdx] = useState(0)
-  const [sellNote, setSellNote] = useState("")
   const [sellError, setSellError] = useState("")
 
   // Persist storage adjustments automatically
@@ -137,12 +136,18 @@ export default function DemoApp() {
     })
   }, [activeTab])
 
-  function initiateSellFlow(product, qty = 1, variantIdx = null) {
-    const resolved = products.find(p => p.id === (product?.id ?? product)) || product
-    setProductToSell(resolved)
-    setSellQuantity(qty)
-    setSelectedVariantIdx(variantIdx !== null ? variantIdx : 0)
-    setSellNote("")
+  function receiveSellTransaction(transactionPackage) {
+    if (!transactionPackage?.id) return
+
+    const resolved = products.find(p => p.id === transactionPackage.id) || transactionPackage
+
+    setProductToSell({
+      ...resolved,
+      selectedVariantIdx: transactionPackage.selectedVariantIdx ?? 0,
+      selectedOutflowMode: transactionPackage.selectedOutflowMode ?? "unit",
+      sellQuantity: Number(transactionPackage.sellQuantity ?? 1),
+      transactionNotes: transactionPackage.transactionNotes ?? "",
+    })
     setSellError("")
   }
 
@@ -249,84 +254,72 @@ export default function DemoApp() {
     setProducts(products.map(item => (item.id === id ? normalizeProduct({ ...updatedProduct, id }) : item)))
   }
 
-  function handleExecuteSale(e) {
-    if (e) e.preventDefault()
+  function handleExecuteSale() {
     if (!productToSell) return
 
-    const qty = Number(sellQuantity)
-    if (!qty || qty <= 0) {
+    const variantIdx = productToSell.selectedVariantIdx ?? 0
+    const mode = productToSell.selectedOutflowMode ?? "unit"
+    const sellQty = Number(productToSell.sellQuantity ?? 0)
+    const notes = (productToSell.transactionNotes ?? "").trim() || "Regular Sale"
+
+    if (!sellQty || sellQty <= 0) {
       setSellError("Please enter a valid quantity greater than 0.")
       return
     }
 
     const current = products.find(p => p.id === productToSell.id) || productToSell
-    const hasVariants = Array.isArray(current.variants) && current.variants.length > 0
+    const metrics = resolveCheckoutMetrics(current, variantIdx, mode)
+    if (!metrics) return
 
-    let activeVariant = null
-    if (hasVariants) {
-      activeVariant = current.variants[selectedVariantIdx]
-      if (!activeVariant || qty > Number(activeVariant.quantity || 0)) {
-        setSellError(`Insufficient stock for selected variant/batch. Only ${activeVariant?.quantity || 0} units available.`)
-        return
-      }
-    } else {
-      if (qty > Number(current.stock || 0)) {
-        setSellError(`Insufficient overall stock. Only ${current.stock || 0} units available.`)
-        return
-      }
+    const { totalRevenue, totalUnitsToDeduct } = computeCheckoutTotals(metrics, sellQty)
+
+    if (totalUnitsToDeduct > metrics.unitsAvailable) {
+      setSellError(`Insufficient stock. Only ${metrics.unitsAvailable} units available.`)
+      return
     }
 
     const updatedProducts = products.map(item => {
-      if (item.id === current.id) {
-        const copy = { ...item }
-        if (Array.isArray(copy.variants) && copy.variants.length > 0) {
-          copy.variants = copy.variants.map((v, idx) =>
-            idx === selectedVariantIdx ? { ...v, quantity: Math.max(0, Number(v.quantity || 0) - qty) } : v
-          )
-          copy.stock = copy.variants.reduce((s, vv) => s + Number(vv.quantity || 0), 0)
-        } else {
-          copy.stock = Math.max(0, Number(copy.stock || 0) - qty)
-        }
-        return normalizeProduct(copy)
+      if (item.id !== current.id) return item
+      const copy = { ...item }
+
+      if (metrics.hasVariants) {
+        copy.variants = copy.variants.map((v, idx) =>
+          idx === variantIdx
+            ? { ...v, quantity: Math.max(0, Number(v.quantity || 0) - totalUnitsToDeduct) }
+            : v
+        )
+        copy.stock = copy.variants.reduce((s, v) => s + Number(v.quantity || 0), 0)
+      } else {
+        copy.stock = Math.max(0, Number(copy.stock || 0) - totalUnitsToDeduct)
       }
-      return item
+      return normalizeProduct(copy)
     })
 
     let saleDisplayName = current.name
-    let itemPrice = Number(current.price ?? 0)
-    
-    const unitSellingPrice = hasVariants ? Number(activeVariant?.unitSellingPrice ?? 0) : Number(current.price ?? 0)
-    const bulkSellingPrice = hasVariants ? Number(activeVariant?.bulkSellingPrice ?? 0) : Number(current.bulkSellingPrice ?? 0)
-    const unitsPerPack = hasVariants ? Number(activeVariant?.unitsPerPack || 1) : 1
-
-    if (hasVariants && activeVariant) {
-      saleDisplayName += ` (${activeVariant.formulationType ?? ""}${activeVariant.strength ? ' - ' + activeVariant.strength : ''})`
-      itemPrice = unitSellingPrice
+    const { source } = metrics
+    if (metrics.hasVariants && source) {
+      saleDisplayName += ` (${source.formulationType ?? ""}${source.strength ? " - " + source.strength : ""})`
     }
 
-    const bulkQuantity = unitsPerPack > 1 ? Math.floor(qty / unitsPerPack) : 0
-    const unitQuantity = unitsPerPack > 1 ? qty % unitsPerPack : qty
-
-    setSalesLog([
-      {
-        id: Date.now(),
-        productId: current.id,
-        variantId: activeVariant ? activeVariant.id : null,
-        name: saleDisplayName,
-        quantity: qty,
-        price: itemPrice,
-        unitSellingPrice: unitSellingPrice,
-        bulkSellingPrice: bulkSellingPrice,
-        unitQuantity: unitQuantity,
-        bulkQuantity: bulkQuantity,
-        note: sellNote.trim() || "Regular Sale",
-        date: new Date().toLocaleString()
-      },
-      ...salesLog
-    ])
+    setSalesLog(prev => [{
+      id: Date.now(),
+      productId: current.id,
+      variantId: metrics.hasVariants ? source.id : null,
+      name: saleDisplayName,
+      quantity: totalUnitsToDeduct,
+      sellQuantity: sellQty,
+      outflowMode: mode,
+      price: metrics.rate,
+      total: totalRevenue,
+      unitSellingPrice: metrics.unitPrice,
+      bulkSellingPrice: metrics.bulkPrice,
+      note: notes,
+      date: new Date().toLocaleString(),
+    }, ...prev])
 
     setProducts(updatedProducts)
     setProductToSell(null)
+    setSellError("")
   }
 
   function deleteProduct(id) {
@@ -352,25 +345,11 @@ export default function DemoApp() {
     const stockCount = Number(item.stock || 0)
     const reorderLevel = Number(item.reorderLevel || 5)
 
-    let checkExpiryDate = item.expiryDate
-    if (Array.isArray(item.variants) && item.variants.length > 0) {
-      checkExpiryDate = item.variants[0]?.expiryDate
-    }
-
-    let daysRemaining = Infinity
-    if (checkExpiryDate && checkExpiryDate !== "N/A" && checkExpiryDate !== "") {
-      const expiry = new Date(checkExpiryDate)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      expiry.setHours(0, 0, 0, 0)
-      daysRemaining = Math.round((expiry - today) / (24 * 60 * 60 * 1000))
-    }
-
     switch (inventoryFilter) {
       case "expired":
-        return daysRemaining < 0
+        return isExpired(item)
       case "expiringSoon":
-        return daysRemaining >= 0 && daysRemaining <= 90
+        return isExpiringSoon(item)
       case "lowStock":
         return stockCount > 0 && stockCount <= reorderLevel
       case "outOfStock":
@@ -379,36 +358,6 @@ export default function DemoApp() {
         return true
     }
   })
-
-  const contextualUnitPrice = productToSell
-    ? (Array.isArray(productToSell.variants) && productToSell.variants.length > 0
-        ? Number(productToSell.variants[selectedVariantIdx]?.unitSellingPrice ?? productToSell.price)
-        : Number(productToSell.price ?? 0))
-    : 0
-
-  const contextualBulkPrice = productToSell
-    ? (Array.isArray(productToSell.variants) && productToSell.variants.length > 0
-        ? Number(productToSell.variants[selectedVariantIdx]?.bulkSellingPrice ?? 0)
-        : Number(productToSell.bulkSellingPrice ?? 0))
-    : 0
-
-  const contextualBulkType = productToSell
-    ? (Array.isArray(productToSell.variants) && productToSell.variants.length > 0
-        ? productToSell.variants[selectedVariantIdx]?.bulkPackagingType
-        : productToSell.bulkPackagingType || "Pack")
-    : "Pack"
-
-  const contextualDispensingType = productToSell
-    ? (Array.isArray(productToSell.variants) && productToSell.variants.length > 0
-        ? productToSell.variants[selectedVariantIdx]?.unitDispensingType
-        : productToSell.unitDispensingType || "Unit")
-    : "Unit"
-
-  const contextualExpiryDate = productToSell
-    ? (Array.isArray(productToSell.variants) && productToSell.variants.length > 0
-        ? productToSell.variants[selectedVariantIdx]?.expiryDate
-        : productToSell.expiryDate)
-    : ""
 
   return (
     <div className={darkMode ? "demo-layout" : "demo-layout light-mode"}>
@@ -441,7 +390,22 @@ export default function DemoApp() {
         <InventoryHeader darkMode={darkMode} />
         <InventoryStats products={products} />
 
-        {activeTab === "dashboard" && <Dashboard products={products} salesLog={salesLog} />}
+        {activeTab === "dashboard" && (
+          <Dashboard
+            products={products}
+            salesLog={salesLog}
+            onViewExpiringSoon={() => {
+              setActiveTab("products")
+              setInventoryFilter("expiringSoon")
+              setSearch("")
+            }}
+            onViewExpired={() => {
+              setActiveTab("products")
+              setInventoryFilter("expired")
+              setSearch("")
+            }}
+          />
+        )}
 
         {activeTab === "products" && (
           <>
@@ -519,7 +483,7 @@ export default function DemoApp() {
                   <ProductCard
                     key={product.id}
                     product={product}
-                    sellProduct={(qty, variantIdx) => initiateSellFlow(product, qty, variantIdx)}
+                    sellProduct={receiveSellTransaction}
                     deleteProduct={deleteProduct}
                     updateProduct={updateProduct}
                   />
@@ -545,7 +509,7 @@ export default function DemoApp() {
                         <p className="sale-note-sub"><FileText size={12} /> {sale.note}</p>
                       )}
                     </div>
-                    <span className="revenue-text">₦{(Number(sale.price) * sale.quantity).toLocaleString()}</span>
+                    <span className="revenue-text">₦{(sale.total ?? Number(sale.price) * sale.quantity).toLocaleString()}</span>
                   </div>
                   <p className="sale-date-sub">{sale.date}</p>
                 </div>
@@ -558,119 +522,274 @@ export default function DemoApp() {
         {activeTab === "reports" && <Reports products={products} salesLog={salesLog} />}
         {activeTab === "settings" && <SettingsPanel darkMode={darkMode} setDarkMode={setDarkMode} />}
       </main>
+{productToSell && (
+  <div className="sale-modal-overlay" onClick={() => setProductToSell(null)}>
+    <div 
+      className="sale-modal-container sell-modal-sizing" 
+      style={{ 
+        maxWidth: '540px',
+        width: '92%',
+        margin: '0 auto',
+        padding: '16px 12px',
+        maxHeight: '90vh',
+        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column'
+      }} 
+      onClick={(e) => e.stopPropagation()}
+    >
+      
 
-      {productToSell && (
-        <div className="sale-modal-overlay" onClick={() => setProductToSell(null)}>
-          <div className="sale-modal-container" onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="sale-modal-close" onClick={() => setProductToSell(null)}>✕</button>
-            <div className="sale-modal-header">
-              <h2>Confirm Sale</h2>
-              <p>Verify transaction details before stock deduction</p>
+      {(() => {
+        const liveProduct = products.find(p => p.id === productToSell.id) || productToSell
+        const activeVariantIdx = productToSell.selectedVariantIdx ?? 0
+        const currentMode = productToSell.selectedOutflowMode ?? "unit"
+        const quantityToSell = Number(productToSell.sellQuantity ?? 1)
+        const transactionNotes = productToSell.transactionNotes ?? ""
+
+        const metrics = resolveCheckoutMetrics(liveProduct, activeVariantIdx, currentMode)
+        if (!metrics) return null
+
+        const { hasVariants, source, unitsPerPack, rate, unitsAvailable, packsAvailable, unitLabel, bulkLabel, isBulk } = metrics
+        const { totalRevenue, totalUnitsToDeduct } = computeCheckoutTotals(metrics, quantityToSell)
+
+        return (
+          <div className="sale-modal-form" style={{ marginTop: '0', display: 'flex', flexDirection: 'column', height: '100%' }}>
+            
+            {/* Header with fluid layout handling down to 300px */}
+            <div className="sale-modal-header" style={{ paddingBottom: '12px', paddingRight: '20px', borderBottom: '1px solid #e2e8f0' }}>
+              <h2 style={{ 
+                fontSize: 'clamp(14px, 4vw, 16px)', 
+                fontWeight: '600', 
+                color: '#0f172a', 
+                margin: 0, 
+                textAlign: 'left',
+                lineHeight: '1.3',
+                wordBreak: 'break-word'
+              }}>
+                DISPATCH SELECTION: {productToSell.name} {hasVariants && `(${source.formulationType || "Form"} ${source.strength || ""})`}
+              </h2>
+              <p style={{ 
+                margin: '6px 0 0', 
+                fontSize: 'clamp(9px, 3vw, 11px)', 
+                color: '#4b5563', 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.05em', 
+                fontWeight: '700', 
+                textAlign: 'left' 
+              }}>
+                Mode: {isBulk ? "WHOLESALE BULK PACKAGING" : "RETAIL UNIT DISPENSING"}
+              </p>
             </div>
 
-            <form onSubmit={handleExecuteSale} className="sale-modal-form">
-              <div className="sale-modal-content">
-                <div className="sale-info-card sale-full-width">
-                  <span>Product Name</span>
-                  <strong>{productToSell.name}</strong>
-                  {productToSell.genericName && productToSell.genericName !== "N/A" && (
-                    <small className="meta-field-pill" style={{ marginTop: '4px', display: 'inline-block' }}>
-                      Generic: {productToSell.genericName}
-                    </small>
-                  )}
-                </div>
+            {/* Scrollable body content layer with compact padding handling */}
+            <div style={{ marginTop: '12px', flex: '1 1 auto', overflowY: 'visible' }}>
+              <div className="sale-modal-content" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                
+                {/* STRICT SWITCH DISPATCH CONDITIONAL VIEW */}
+                {isBulk ? (
+                  <>
+                    {/* WHOLESALE BULK FOCUS LAYOUT */}
+                    <div className="form-field-group" style={{ textAlign: 'left' }}>
+                      <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#64748b', fontWeight: '500' }}>
+                        Bulk Reference Selling Price:
+                      </label>
+                      <div style={{ 
+                        fontSize: '13px', 
+                        color: '#0f172a', 
+                        padding: '8px 10px', 
+                        background: '#f1f5f9', 
+                        borderRadius: '6px', 
+                        border: '1px solid #e2e8f0',
+                        lineHeight: '1.4',
+                        wordBreak: 'break-word'
+                      }}>
+                        <strong>₦{rate.toLocaleString()}</strong> per Bulk {bulkLabel}
+                        <span style={{ color: '#64748b', marginLeft: '4px', display: 'inline-block', fontSize: '11px' }}>
+                          (Contains {unitsPerPack} {unitLabel}/{bulkLabel})
+                        </span>
+                      </div>
+                    </div>
 
-                <div className="sale-info-card">
-                  <span>Unit Price ({contextualDispensingType})</span>
-                  <strong>₦{contextualUnitPrice.toLocaleString()}</strong>
-                  {contextualBulkPrice > 0 && (
-                    <span className="cost-caption" style={{ color: '#2563eb' }}>
-                      Bulk ({contextualBulkType}): ₦{contextualBulkPrice.toLocaleString()}
-                    </span>
-                  )}
-                </div>
+                    <div className="form-field-group" style={{ textAlign: 'left' }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        alignItems: 'flex-start', 
+                        gap: '2px',
+                        marginBottom: '4px' 
+                      }}>
+                        <label style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Fit Bulk Quantity to Sell:</label>
+                        <span style={{ 
+                          fontSize: '10px', 
+                          color: '#2563eb', 
+                          fontWeight: '600', 
+                          padding: '2px 6px', 
+                          background: '#eff6ff', 
+                          borderRadius: '4px',
+                          display: 'inline-block',
+                          wordBreak: 'break-word'
+                        }}>
+                          Available Stock: {packsAvailable} {bulkLabel}s ({unitsAvailable} single units)
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        className="sale-input input-padding-compact"
+                        value={quantityToSell}
+                        disabled
+                        style={{ fontSize: '13px', padding: '8px 10px', backgroundColor: '#f1f5f9', cursor: 'not-allowed', width: '100%', boxSizing: 'border-box' }}
+                      />
+                      <span style={{ fontSize: '10px', color: '#94a3b8', marginTop: '3px', display: 'block' }}>
+                        * Input optimized for cartons/boxes
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* RETAIL UNIT FOCUS LAYOUT */}
+                    <div className="form-field-group" style={{ textAlign: 'left' }}>
+                      <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#64748b', fontWeight: '500' }}>
+                        Unit Base Retail Price:
+                      </label>
+                      <div style={{ fontSize: '13px', color: '#0f172a', padding: '8px 10px', background: '#f1f5f9', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                        <strong>₦{rate.toLocaleString()}</strong> per {unitLabel}
+                      </div>
+                    </div>
 
-                <div className="sale-info-card">
-                  <span>Stock Available</span>
-                  <strong className={Number(productToSell.stock) <= Number(productToSell.reorderLevel) ? "sale-stock-low" : "sale-stock-good"}>
-                    {Array.isArray(productToSell.variants) && productToSell.variants.length > 0
-                      ? `${productToSell.variants[selectedVariantIdx]?.quantity ?? 0} units`
-                      : `${productToSell.stock ?? 0} units`}
-                  </strong>
-                </div>
-
-                {contextualExpiryDate && (
-                  <div className="sale-info-card sale-full-width variant-alert-container">
-                    <span>Product Expiry Date</span>
-                    <span className="expiry-display-text">
-                      <Calendar size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
-                      {contextualExpiryDate}
-                    </span>
-                  </div>
+                    <div className="form-field-group" style={{ textAlign: 'left' }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        alignItems: 'flex-start',
+                        gap: '2px',
+                        marginBottom: '4px' 
+                      }}>
+                        <label style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Fit Unit Quantity to Sell:</label>
+                        <span style={{ 
+                          fontSize: '10px', 
+                          color: '#059669', 
+                          fontWeight: '600', 
+                          padding: '2px 6px', 
+                          background: '#ecfdf5', 
+                          borderRadius: '4px',
+                          display: 'inline-block'
+                        }}>
+                          Available Stock: {unitsAvailable} {unitLabel}
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        className="sale-input input-padding-compact"
+                        value={quantityToSell}
+                        disabled
+                        style={{ fontSize: '13px', padding: '8px 10px', backgroundColor: '#f1f5f9', cursor: 'not-allowed', width: '100%', boxSizing: 'border-box' }}
+                      />
+                      <span style={{ fontSize: '10px', color: '#94a3b8', marginTop: '3px', display: 'block' }}>
+                        * Input optimized for pieces/tablets
+                      </span>
+                    </div>
+                  </>
                 )}
 
-                {Array.isArray(productToSell.variants) && productToSell.variants.length > 0 && (
-                  <div className="sale-info-card sale-full-width">
-                    <span><Layers size={14} /> Selected Variant Form</span>
-                    <select
-                      value={selectedVariantIdx}
-                      onChange={(e) => {
-                        setSelectedVariantIdx(Number(e.target.value))
-                        setSellError("")
-                      }}
-                      className="sale-select"
-                    >
-                      {productToSell.variants.map((v, index) => (
-                        <option key={v.id ?? index} value={index}>
-                          {v.formulationType} ({v.strength}) — {v.quantity ?? 0} {v.unitDispensingType || "items"} available
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                <div className="sale-info-card">
-                  <span>Quantity to Sell</span>
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    value={sellQuantity}
-                    onChange={(e) => {
-                      setSellQuantity(Number(e.target.value))
-                      setSellError("")
-                    }}
-                    className="sale-input"
+                {/* Transaction Remarks Field */}
+                <div className="form-field-group" style={{ textAlign: 'left' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Transaction Internal Notes:</label>
+                  <textarea
+                    className="sale-input textarea-resizer"
+                    rows={2}
+                    value={transactionNotes || "No additional configuration tracking notes added..."}
+                    disabled
+                    style={{ minHeight: '44px', fontSize: '12px', padding: '6px 10px', backgroundColor: '#f1f5f9', cursor: 'not-allowed', width: '100%', boxSizing: 'border-box' }}
                   />
                 </div>
 
-                <div className="sale-info-card">
-                  <span>Transaction Notes</span>
-                  <input
-                    type="text"
-                    value={sellNote}
-                    placeholder="E.g., Customer batch tracking, discount, etc."
-                    onChange={(e) => setSellNote(e.target.value)}
-                    className="sale-input"
-                  />
+                {/* Variant Specific Batch Expiration Badge */}
+                {source.expiryDate && (
+                  <div style={{ 
+                    marginTop: '2px', 
+                    padding: '8px 10px', 
+                    background: '#fef2f2', 
+                    borderRadius: '6px', 
+                    border: '1px solid #fee2e2', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    flexWrap: 'wrap',
+                    gap: '4px', 
+                    fontSize: '11px' 
+                  }}>
+                    <span style={{ color: '#991b1b', fontWeight: '500' }}>Batch Expiration Status:</span>
+                    <strong style={{ color: '#dc2626' }}>🗓️ {source.expiryDate}</strong>
+                  </div>
+                )}
+
+                {/* ESTIMATED TOTAL MODULE SECTION */}
+                <div style={{ marginTop: '6px', padding: '10px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', textAlign: 'left' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+                    <span style={{ fontSize: '11px', color: '#475569', fontWeight: '600' }}>ESTIMATED TOTAL:</span>
+                    <strong style={{ fontSize: 'clamp(15px, 5vw, 18px)', color: '#0f172a', fontWeight: '700' }}>
+                      ₦{totalRevenue.toLocaleString()}
+                    </strong>
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px', lineHeight: '1.3' }}>
+                    (Deducting {totalUnitsToDeduct} total single {unitLabel.toLowerCase()} from tracking)
+                  </div>
                 </div>
 
-                {sellError && <div className="sale-error-box">⚠️ {sellError}</div>}
-
-                <div className="sale-total-card">
-                  <span>Estimated Revenue</span>
-                  <strong>₦{(Number(contextualUnitPrice) * (sellQuantity || 0)).toLocaleString()}</strong>
-                </div>
+                {typeof sellError !== 'undefined' && sellError && (
+                  <div className="sale-error-box" style={{ marginTop: '4px', fontSize: '12px' }}>⚠️ {sellError}</div>
+                )}
               </div>
 
-              <div className="sale-modal-footer">
-                <button type="button" className="sale-cancel-btn" onClick={() => setProductToSell(null)}>Cancel</button>
-                <button type="submit" className="sale-confirm-btn">Complete Sale</button>
+              {/* Action Buttons styled to match your card options safely handling narrow viewports */}
+              <div 
+                className="sale-modal-footer sell-footer-override" 
+                style={{ 
+                  marginTop: '16px', 
+                  paddingTop: '12px', 
+                  borderTop: '1px solid #e2e8f0', 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <button 
+                  type="button" 
+                  className="sale-cancel-btn" 
+                  style={{ 
+                    margin: 0, 
+                    padding: '8px 14px', 
+                    fontSize: '12px',
+                    flex: '1'
+                  }} 
+                  onClick={() => setProductToSell(null)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="sale-confirm-btn" 
+                  style={{ 
+                    margin: 0, 
+                    padding: '8px 14px', 
+                    fontSize: '12px',
+                    flex: '2',
+                    whiteSpace: 'nowrap'
+                  }} 
+                  onClick={handleExecuteSale}
+                >
+                  CONFIRM CHECKOUT
+                </button>
               </div>
-            </form>
+            </div>
+
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
+  </div>
+)}
+          </div>
   )
 }

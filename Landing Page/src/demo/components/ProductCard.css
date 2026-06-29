@@ -10,10 +10,22 @@
   --product-card-accent: #38bdf8;
   --product-card-secondary-bg: #111827;
   --product-card-action-bg: rgba(255, 255, 255, 0.04);
-  --product-card-button-bg: #ffffff;
-  --product-card-button-text: #334155;
-  --product-card-button-border: #cbd5e1;
-  --product-card-button-muted: #64748b;
+  --product-card-button-bg: rgba(255, 255, 255, 0.06);
+  --product-card-button-text: #e2e8f0;
+  --product-card-button-border: rgba(255, 255, 255, 0.12);
+  --product-card-button-muted: #94a3b8;
+  --product-card-button-hover-bg: rgba(255, 255, 255, 0.1);
+  --product-card-button-hover-border: rgba(255, 255, 255, 0.2);
+  --product-card-button-view-hover-text: #60a5fa;
+  --product-card-button-edit-hover-text: #2dd4bf;
+  --product-card-button-delete-hover-bg: rgba(239, 68, 68, 0.15);
+  --product-card-button-delete-hover-text: #f87171;
+  --product-card-button-delete-hover-border: rgba(239, 68, 68, 0.35);
+  --product-card-sell-bg: #2563eb;
+  --product-card-sell-text: #ffffff;
+  --product-card-sell-border: #2563eb;
+  --product-card-sell-hover-bg: #1d4ed8;
+  --product-card-sell-hover-border: #1d4ed8;
   --product-card-input-bg: #111827;
   --product-card-input-border: #334155;
   --product-card-input-text: #f8fafc;
@@ -26,6 +38,20 @@
   --product-card-badge-soon-text: #b45309;
   --product-card-badge-expired-bg: #fee2e2;
   --product-card-badge-expired-text: #991b1b;
+  
+  /* Modal styling - Dark Mode */
+  --product-modal-bg: #0f172a;
+  --product-modal-section-bg: #1e293b;
+  --product-modal-section-border: #334155;
+  --product-modal-variant-bg: #1e293b;
+  --product-modal-variant-border: #334155;
+  --product-modal-text: #f8fafc;
+  --product-modal-text-muted: #94a3b8;
+  --product-modal-accent: #2563eb;
+  --product-modal-banner-bg: rgba(37, 99, 235, 0.08);
+  --product-modal-banner-border: rgba(37, 99, 235, 0.25);
+  --product-modal-matrix-bg: rgba(37, 99, 235, 0.05);
+  --product-modal-matrix-border: rgba(37, 99, 235, 0.3);
 }
 
 .light-mode {
@@ -41,6 +67,18 @@
   --product-card-button-text: #334155;
   --product-card-button-border: #cbd5e1;
   --product-card-button-muted: #64748b;
+  --product-card-button-hover-bg: #f8fafc;
+  --product-card-button-hover-border: #94a3b8;
+  --product-card-button-view-hover-text: #2563eb;
+  --product-card-button-edit-hover-text: #0d9488;
+  --product-card-button-delete-hover-bg: #fee2e2;
+  --product-card-button-delete-hover-text: #ef4444;
+  --product-card-button-delete-hover-border: #fca5a5;
+  --product-card-sell-bg: #2563eb;
+  --product-card-sell-text: #ffffff;
+  --product-card-sell-border: #2563eb;
+  --product-card-sell-hover-bg: #1d4ed8;
+  --product-card-sell-hover-border: #1d4ed8;
   --product-card-input-bg: #ffffff;
   --product-card-input-border: #cbd5e1;
   --product-card-input-text: #0f172a;
@@ -53,6 +91,20 @@
   --product-card-badge-soon-text: #9a3412;
   --product-card-badge-expired-bg: #fee2e2;
   --product-card-badge-expired-text: #991b1b;
+  
+  /* Modal styling - Light Mode */
+  --product-modal-bg: #ffffff;
+  --product-modal-section-bg: #f8fafc;
+  --product-modal-section-border: #e2e8f0;
+  --product-modal-variant-bg: #f8fafc;
+  --product-modal-variant-border: #e2e8f0;
+  --product-modal-text: #0f172a;
+  --product-modal-text-muted: #64748b;
+  --product-modal-accent: #2563eb;
+  --product-modal-banner-bg: rgba(37, 99, 235, 0.08);
+  --product-modal-banner-border: rgba(37, 99, 235, 0.2);
+  --product-modal-matrix-bg: rgba(37, 99, 235, 0.04);
+  --product-modal-matrix-border: rgba(37, 99, 235, 0.25);
 }
 
 .product-row-card {
@@ -77,8 +129,12 @@
 }
 
 .expired-row-modifier {
-  background-color: rgba(254, 226, 226, 0.15);
+  background-color: rgba(239, 68, 68, 0.08);
   border-left: 4px solid #ef4444;
+}
+
+.light-mode .expired-row-modifier {
+  background-color: rgba(254, 226, 226, 0.15);
 }
 
 .product-col {
@@ -155,10 +211,10 @@
   align-items: center;
   gap: 16px;
   padding: 12px 20px;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  background-color: var(--product-modal-section-bg);
+  border-bottom: 1px solid var(--product-modal-section-border);
   font-weight: 600;
-  color: #64748b;
+  color: var(--product-modal-text-muted);
   font-size: 0.875rem;
 }
 
@@ -266,30 +322,30 @@
 .product-actions .delete-btn {
   width: 36px;
   padding: 8px 0;
-  color: #64748b;
+  color: var(--product-card-button-muted);
 }
 
 .product-actions .view-btn:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
-  color: #2563eb;
+  background: var(--product-card-button-hover-bg);
+  border-color: var(--product-card-button-hover-border);
+  color: var(--product-card-button-view-hover-text);
 }
 
 .product-actions .edit-btn:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
-  color: #0d9488;
+  background: var(--product-card-button-hover-bg);
+  border-color: var(--product-card-button-hover-border);
+  color: var(--product-card-button-edit-hover-text);
 }
 
 .product-actions .sell-btn {
-  background: #2563eb;
-  color: #ffffff;
-  border: 1px solid #2563eb;
+  background: var(--product-card-sell-bg);
+  color: var(--product-card-sell-text);
+  border: 1px solid var(--product-card-sell-border);
 }
 
 .product-actions .sell-btn:hover:not(:disabled) {
-  background: #1d4ed8;
-  border-color: #1d4ed8;
+  background: var(--product-card-sell-hover-bg);
+  border-color: var(--product-card-sell-hover-border);
 }
 
 .product-actions .sell-btn:disabled {
@@ -298,16 +354,16 @@
 }
 
 .product-actions .delete-btn:hover {
-  color: #ef4444;
-  background: #fee2e2;
-  border-color: #fca5a5;
+  color: var(--product-card-button-delete-hover-text);
+  background: var(--product-card-button-delete-hover-bg);
+  border-color: var(--product-card-button-delete-hover-border);
 }
 
 /* ==========================================================================
    View Modal Specs Elements
    ========================================================================== */
 .section-subtitle-blue {
-  color: #2563eb;
+  color: var(--product-modal-accent);
   font-weight: 600;
   font-size: 13px;
 }
@@ -325,10 +381,11 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   padding: 10px 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--product-modal-variant-bg);
+  border: 1px solid var(--product-modal-variant-border);
   border-radius: 6px;
   font-size: 13px;
+  color: var(--product-modal-text);
 }
 
 .view-variant-row small {
@@ -339,7 +396,7 @@
 
 .deactivated-notice {
   font-size: 13px;
-  color: #64748b;
+  color: var(--product-modal-text-muted);
   font-style: italic;
   margin-top: 4px;
 }
@@ -349,7 +406,7 @@
   line-height: 1.5;
   font-size: 13px;
   white-space: pre-wrap;
-  color: #475569;
+  color: var(--product-modal-text);
 }
 
 .btn-flex-center {
@@ -456,8 +513,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
+  background: var(--product-card-button-bg);
+  border: 1px solid var(--product-card-button-border);
   border-radius: 6px;
   cursor: pointer;
   flex-shrink: 0;
@@ -465,11 +522,12 @@
   height: 38px;
   width: 42px;
   box-sizing: border-box;
+  color: var(--product-card-button-text);
 }
 
 .scanner-trigger-action-btn:hover {
-  background: #e5e7eb;
-  border-color: #9ca3af;
+  background: var(--product-card-button-hover-bg);
+  border-color: var(--product-card-button-hover-border);
 }
 
 /* ==========================================================================
@@ -481,23 +539,23 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  background: #eff6ff;
+  background: var(--product-modal-banner-bg);
   padding: 14px;
   border-radius: 8px;
-  border: 1px dashed #bfdbfe;
+  border: 1px dashed var(--product-modal-banner-border);
   box-sizing: border-box;
 }
 
 .toggle-banner-title {
   font-size: 13px;
   font-weight: 700;
-  color: #1e40af;
+  color: var(--product-modal-accent);
   display: block;
 }
 
 .toggle-banner-desc {
   font-size: 12px;
-  color: #1e3a8a;
+  color: var(--product-modal-text-muted);
   margin-top: 2px;
 }
 
@@ -509,16 +567,17 @@
 }
 
 .toggle-live-preview {
-  background: #ffffff;
+  background: var(--product-modal-section-bg);
   padding: 6px 12px;
   border-radius: 6px;
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--product-modal-section-border);
   font-size: 12px;
   white-space: nowrap;
+  color: var(--product-modal-text);
 }
 
 .toggle-live-preview strong {
-  color: #2563eb;
+  color: var(--product-modal-accent);
 }
 
 .toggle-switch-icon {
@@ -529,30 +588,32 @@
   display: flex;
 }
 
-.toggle-active { color: #2563eb; }
-.toggle-inactive { color: #94a3b8; }
+.toggle-active { color: var(--product-modal-accent); }
+.toggle-inactive { color: var(--product-modal-text-muted); }
 
 /* Simple Mode Flat Config Styles */
 .flat-layout-grid {
-  background: #ffffff;
+  background: var(--product-modal-section-bg);
   padding: 16px;
   border-radius: 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--product-modal-section-border);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
   box-sizing: border-box;
+  color: var(--product-modal-text);
 }
 
 /* ==========================================================================
    Formulation Matrix Components
    ========================================================================== */
 .variant-matrix-box {
-  background: rgba(37, 99, 235, 0.01);
-  border: 1px dashed #93c5fd;
+  background: var(--product-modal-matrix-bg);
+  border: 1px dashed var(--product-modal-matrix-border);
   padding: 14px;
   border-radius: 8px;
   box-sizing: border-box;
+  color: var(--product-modal-text);
 }
 
 .matrix-header-row {
@@ -567,7 +628,7 @@
 .matrix-title-blue {
   font-size: 13px;
   font-weight: 700;
-  color: #2563eb;
+  color: var(--product-modal-accent);
 }
 
 .matrix-add-btn {
@@ -576,7 +637,7 @@
   gap: 6px;
   font-size: 12px;
   font-weight: 500;
-  background: #2563eb;
+  background: var(--product-modal-accent);
   color: #ffffff;
   padding: 6px 12px;
   border-radius: 6px;
@@ -586,7 +647,7 @@
 }
 
 .matrix-add-btn:hover {
-  background: #1d4ed8;
+  opacity: 0.9;
 }
 
 .matrix-rows-stack {
@@ -596,19 +657,20 @@
 }
 
 .matrix-item-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--product-modal-section-bg);
+  border: 1px solid var(--product-modal-section-border);
   padding: 14px;
   border-radius: 6px;
   position: relative;
   box-sizing: border-box;
+  color: var(--product-modal-text);
 }
 
 .matrix-row-remove-btn {
   position: absolute;
   top: 10px;
   right: 10px;
-  color: #64748b;
+  color: var(--product-modal-text-muted);
   background: none;
   border: none;
   cursor: pointer;
@@ -642,17 +704,19 @@
 .matrix-input-group label {
   font-size: 11px;
   font-weight: 500;
-  color: #64748b;
+  color: var(--product-modal-text-muted);
 }
 
 .variant-select-compact {
   padding: 6px 8px;
   border-radius: 4px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--product-card-input-border);
   font-size: 13px;
   width: 100%;
   box-sizing: border-box;
   height: 34px;
+  background: var(--product-card-input-bg);
+  color: var(--product-card-input-text);
 }
 
 .matrix-calc-display {
@@ -661,8 +725,8 @@
   gap: 2px;
   justify-content: center;
   align-items: center;
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
+  background: var(--product-modal-variant-bg);
+  border: 1px dashed var(--product-modal-variant-border);
   border-radius: 4px;
   padding: 4px;
   box-sizing: border-box;
@@ -670,19 +734,19 @@
 
 .calc-display-subtext {
   font-size: 10px;
-  color: #64748b;
+  color: var(--product-modal-text-muted);
 }
 
 .calc-display-count {
   font-size: 12px;
-  color: #1e293b;
+  color: var(--product-modal-text);
 }
 
 /* ==========================================================================
    Custom Metadata Lists
    ========================================================================== */
 .custom-fields-section {
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--product-modal-section-border);
   padding-top: 14px;
 }
 
@@ -698,7 +762,7 @@
 .custom-fields-title {
   font-size: 13px;
   font-weight: 600;
-  color: #475569;
+  color: var(--product-modal-text);
 }
 
 .custom-fields-add-btn {
@@ -706,12 +770,17 @@
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  background: #64748b;
+  background: var(--product-modal-text-muted);
   color: #ffffff;
   padding: 5px 10px;
   border-radius: 6px;
   border: none;
   cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.custom-fields-add-btn:hover {
+  opacity: 0.8;
 }
 
 .custom-fields-stack {
@@ -732,16 +801,18 @@
   padding: 8px 12px;
   font-size: 13px;
   border-radius: 6px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--product-card-input-border);
   width: 100%;
   box-sizing: border-box;
+  background: var(--product-card-input-bg);
+  color: var(--product-card-input-text);
 }
 
 .custom-field-remove-icon {
   padding: 8px;
   background: none;
   border: none;
-  color: #94a3b8;
+  color: var(--product-modal-text-muted);
   cursor: pointer;
   transition: color 0.15s ease;
   display: inline-flex;
@@ -757,17 +828,19 @@
 .textarea-label-bold {
   font-size: 13px;
   font-weight: 600;
-  color: #475569;
+  color: var(--product-modal-text);
 }
 
 .textarea-resizer {
   padding: 10px;
   border-radius: 6px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--product-card-input-border);
   font-size: 13px;
   resize: vertical;
   width: 100%;
   box-sizing: border-box;
+  background: var(--product-card-input-bg);
+  color: var(--product-card-input-text);
 }
 
 /* Point of Sale Overrides */
@@ -816,7 +889,7 @@
     flex: 1 1 100%;
     justify-content: flex-start;
     margin-top: 12px;
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid var(--product-card-border);
     padding-top: 12px;
     gap: 8px;
   }
@@ -943,7 +1016,7 @@
 
   /* Custom attribute properties list formatting */
   .custom-fields-row {
-    border-bottom: 1px dashed #e2e8f0;
+    border-bottom: 1px dashed var(--product-modal-section-border);
     padding-bottom: 12px;
     position: relative;
   }

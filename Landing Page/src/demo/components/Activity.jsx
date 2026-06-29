@@ -176,7 +176,17 @@ export default function ActivityPage({ salesLog = [] }) {
 
                         <div className="timeline-content-body">
                           <div className="timeline-content-top-row">
-                            <span className="product-title-text">{log.name}</span>
+                            {/* Product name style configured here to explicitly override white layouts to blue */}
+                            <span 
+                              className="product-title-text"
+                              style={{ 
+                                color: "#2563eb", 
+                                fontWeight: "600",
+                                fontSize: "14px"
+                              }}
+                            >
+                              {log.name}
+                            </span>
                             <span className="log-timestamp-text">{log.displayTime}</span>
                           </div>
 

@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import "./ProductCard.css"
 import BarcodeScanner from "./scanner/BarcodeScanner"
+import { resolveCheckoutMetrics, computeCheckoutTotals } from "../utils/checkoutMetrics"
 
 function ProductCard({ product, sellProduct, deleteProduct, updateProduct }) {
   const [showView, setShowView] = useState(false)
@@ -194,33 +195,32 @@ function ProductCard({ product, sellProduct, deleteProduct, updateProduct }) {
   }, [showView, showPreSaleConfig, showSellModal, showEdit, showScanner])
 
   const handleSellExecution = () => {
-    const activeItem = hasVariants ? product.variants[selectedVariantIdx] : product
-    const unitsPerPack = Number(activeItem?.unitsPerPack || product.unitsPerPack || 1)
-    
-    const totalUnitsToDeduct = selectedOutflowMode === "bulk" 
-      ? Number(sellQuantity) * unitsPerPack 
-      : Number(sellQuantity)
+    const variantIdx = hasVariants ? selectedVariantIdx : 0
+    const metrics = resolveCheckoutMetrics(product, variantIdx, selectedOutflowMode)
+    if (!metrics) return
 
-    const contextualAvailableStock = hasVariants ? (activeItem.quantity || 0) : stockCount
+    const { totalUnitsToDeduct } = computeCheckoutTotals(metrics, sellQuantity)
 
-    if (totalUnitsToDeduct > contextualAvailableStock) {
-      alert(`Insufficient stock! Total requested: ${totalUnitsToDeduct} units. Only ${contextualAvailableStock} units available.`)
+    if (totalUnitsToDeduct > metrics.unitsAvailable) {
+      alert(`Insufficient stock! Total requested: ${totalUnitsToDeduct} units. Only ${metrics.unitsAvailable} units available.`)
       return
     }
 
-    if (hasVariants) {
-      sellProduct(totalUnitsToDeduct, selectedVariantIdx, transactionNotes)
-    } else {
-      sellProduct(totalUnitsToDeduct, null, transactionNotes)
-    }
-    
+    sellProduct({
+      ...product,
+      variants: product.variants ? product.variants.map(v => ({ ...v })) : [],
+      selectedVariantIdx: variantIdx,
+      selectedOutflowMode,
+      sellQuantity: Number(sellQuantity),
+      transactionNotes,
+    })
+
     setShowSellModal(false)
     setSelectedVariantIdx(0)
     setSellQuantity(1)
     setSelectedOutflowMode("unit")
     setTransactionNotes("")
   }
-
   const toggleVariantsConfiguration = () => {
     setHasVariantsToggle(prev => {
       const nextState = !prev
@@ -354,11 +354,11 @@ function ProductCard({ product, sellProduct, deleteProduct, updateProduct }) {
     setShowEdit(false)
   }
 
-  const currentActiveTargetItem = hasVariants ? product.variants[selectedVariantIdx] : product
-  const currentUnitsPerPack = Number(currentActiveTargetItem?.unitsPerPack || product.unitsPerPack || 1)
-  
-  const unitsStockRemaining = hasVariants ? Number(currentActiveTargetItem?.quantity || 0) : stockCount
-  const bulkPacksStockRemaining = Math.floor(unitsStockRemaining / currentUnitsPerPack)
+  const checkoutMetrics = resolveCheckoutMetrics(product, selectedVariantIdx, selectedOutflowMode)
+  const currentActiveTargetItem = checkoutMetrics?.source ?? product
+  const currentUnitsPerPack = checkoutMetrics?.unitsPerPack ?? 1
+  const unitsStockRemaining = checkoutMetrics?.unitsAvailable ?? stockCount
+  const bulkPacksStockRemaining = checkoutMetrics?.packsAvailable ?? 0
 
   return (
     <>
@@ -891,9 +891,10 @@ function ProductCard({ product, sellProduct, deleteProduct, updateProduct }) {
                       <div style={{ fontSize: '14px', color: '#0f172a', padding: '10px 12px', background: '#f1f5f9', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                         <strong>
                           ₦{(() => {
-                            const bulkPrice = Number(currentActiveTargetItem?.bulkSellingPrice || product.bulkSellingPrice || 0)
-                            const unitPrice = Number(currentActiveTargetItem?.unitSellingPrice || currentActiveTargetItem?.price || product.price || 0)
-                            return bulkPrice > 0 ? bulkPrice.toLocaleString() : `${(unitPrice * currentUnitsPerPack).toLocaleString()} (Derived)`
+                            const bulkPrice = checkoutMetrics?.bulkPrice ?? 0
+                            const unitPrice = checkoutMetrics?.unitPrice ?? 0
+                            const rate = checkoutMetrics?.rate ?? unitPrice
+                            return bulkPrice > 0 ? rate.toLocaleString() : `${rate.toLocaleString()} (Derived)`
                           })()}
                         </strong> per Bulk {currentActiveTargetItem?.bulkPackagingType || product.bulkPackagingType || "Pack"}
                         <span style={{ color: '#64748b', marginLeft: '6px', fontSize: '12px' }}>
@@ -928,7 +929,7 @@ function ProductCard({ product, sellProduct, deleteProduct, updateProduct }) {
                       <textarea
                         className="sale-input textarea-resizer"
                         rows={2}
-                        placeholder="Sold to Apex Pharmacy Group Ltd. ..."
+                        placeholder="Sold to your Pharmacy . ..."
                         value={transactionNotes}
                         onChange={(e) => setTransactionNotes(e.target.value)}
                         style={{ minHeight: '54px', fontSize: '13px', paddingTop: '8px', paddingBottom: '8px' }}
@@ -942,7 +943,7 @@ function ProductCard({ product, sellProduct, deleteProduct, updateProduct }) {
                         Unit Base Retail Price:
                       </label>
                       <div style={{ fontSize: '14px', color: '#0f172a', padding: '10px 12px', background: '#f1f5f9', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                        <strong>₦{Number(currentActiveTargetItem?.unitSellingPrice || currentActiveTargetItem?.price || product.price || 0).toLocaleString()}</strong> per {currentActiveTargetItem?.unitDispensingType || product.unitDispensingType || "Unit"}
+                        <strong>₦{(checkoutMetrics?.unitPrice ?? 0).toLocaleString()}</strong> per {currentActiveTargetItem?.unitDispensingType || product.unitDispensingType || "Unit"}
                       </div>
                     </div>
 
@@ -986,23 +987,11 @@ function ProductCard({ product, sellProduct, deleteProduct, updateProduct }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '12px', color: '#475569', fontWeight: '500' }}>ESTIMATED TOTAL:</span>
                     <strong style={{ fontSize: '18px', color: '#0f172a', fontWeight: '700' }}>
-                      {(() => {
-                        const unitPrice = Number(currentActiveTargetItem?.unitSellingPrice || currentActiveTargetItem?.price || product.price || 0)
-                        const bulkPrice = Number(currentActiveTargetItem?.bulkSellingPrice || product.bulkSellingPrice || 0)
-
-                        const priceToUse = selectedOutflowMode === "bulk"
-                          ? (bulkPrice > 0 ? bulkPrice : unitPrice * currentUnitsPerPack)
-                          : unitPrice
-
-                        return `₦${(priceToUse * (sellQuantity || 0)).toLocaleString()}`
-                      })()}
+                      ₦{(computeCheckoutTotals(checkoutMetrics, sellQuantity).totalRevenue).toLocaleString()}
                     </strong>
                   </div>
                   <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
-                    {selectedOutflowMode === "bulk"
-                      ? `(Deducting ${(sellQuantity || 0) * currentUnitsPerPack} total single units from tracking)`
-                      : `(Deducting ${sellQuantity || 0} total single units from tracking)`
-                    }
+                    (Deducting {computeCheckoutTotals(checkoutMetrics, sellQuantity).totalUnitsToDeduct} total single units from tracking)
                   </div>
                 </div>
 
@@ -1045,5 +1034,7 @@ function ProductCard({ product, sellProduct, deleteProduct, updateProduct }) {
     </>
   )
 }
+
+
 
 export default ProductCard
