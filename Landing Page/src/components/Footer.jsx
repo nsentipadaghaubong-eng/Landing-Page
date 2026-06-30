@@ -1,4 +1,5 @@
-import { useState } from "react"
+import React from "react"
+import { Link } from "react-router-dom"
 
 function Footer() {
   return (
@@ -18,18 +19,18 @@ function Footer() {
         <div className="footer-links" style={{ display: "flex", gap: "40px" }}>
           <div>
             <h4 style={{ color: "#f8fafc", fontSize: "14px", marginBottom: "12px" }}>Legal</h4>
-            <a href="/privacy" style={{ display: "block", color: "#64748b", fontSize: "14px", textDecoration: "none", marginBottom: "8px" }}>Privacy Policy</a>
-            <a href="/terms" style={{ display: "block", color: "#64748b", fontSize: "14px", textDecoration: "none" }}>Terms of Service</a>
+            {/* ✅ Using Link components for instant client-side routing */}
+            <Link to="/privacy" style={{ display: "block", color: "#64748b", fontSize: "14px", textDecoration: "none", marginBottom: "8px" }}>
+              Privacy Policy
+            </Link>
+            <Link to="/terms" style={{ display: "block", color: "#64748b", fontSize: "14px", textDecoration: "none" }}>
+              Terms of Service
+            </Link>
           </div>
 
           <div>
             <h4 style={{ color: "#f8fafc", fontSize: "14px", marginBottom: "12px" }}>Support</h4>
             
-            {/* Email Support */}
-            {/*<a href="mailto:support@tipia.com" style={{ display: "block", color: "#64748b", fontSize: "14px", textDecoration: "none", marginBottom: "8px" }}>
-              support@tipia.com
-            </a>*/}
-
             {/* Direct Phone Call */}
             <a href="tel:09012674911" style={{ display: "block", color: "#64748b", fontSize: "14px", textDecoration: "none", marginBottom: "12px" }}>
               📞 Call: 09012674911

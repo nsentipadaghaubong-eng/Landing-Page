@@ -7,9 +7,11 @@ import Waitlist from "./components/Waitlist"
 import Footer from "./components/Footer"
 import ProblemSection from "./components/ProblemSection"
 
-//import UploadPage from "./pages/UploadPage"
+// ✅ Import your legal pages
+import Privacy from "./demo/pages/Privacy"
+import Terms from "./demo/pages/Terms"
 
-// ✅ ADD THIS
+// ✅ DEMO PAGE
 import DemoApp from "./demo/components/DemoApp"
 
 function HomePage() {
@@ -33,10 +35,11 @@ function App() {
         {/* LANDING PAGE */}
         <Route path="/" element={<HomePage />} />
 
-        {/* UPLOAD PAGE (ADMIN / CMS) */}
-        {/*<Route path="/upload" element={<UploadPage />} />*/}
+        {/* ✅ LEGAL ROUTES */}
+        <Route path="/privacy" element={<Privacy onBack={() => window.location.href = "/"} />} />
+        <Route path="/terms" element={<Terms onBack={() => window.location.href = "/"} />} />
 
-        {/* ✅ DEMO PAGE (NEW) */}
+        {/* ✅ DEMO PAGE */}
         <Route path="/demo" element={<DemoApp />} />
 
       </Routes>
